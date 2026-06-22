@@ -2,3 +2,10 @@
 [build]
   publish = "."
   functions = "netlify/functions"
+
+# Tell Netlify's secret scanner to skip the PostHog project token.
+# The phc_ key is the public, write-only PostHog project token. It is meant to
+# live in client code (posthog.js), so the scanner flags it as a false positive.
+# This line marks that one key as public. All other secrets stay scanned.
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "POSTHOG_API_KEY"
