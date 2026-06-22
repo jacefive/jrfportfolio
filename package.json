@@ -1,0 +1,9 @@
+{
+  "name": "jfyrberg-crm-demo-ai",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Server-side AI follow-up function for J Fyrberg's CRM Demo (direct Anthropic call, no analytics).",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0"
+  }
+}

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jason Fyrberg — Portfolio</title>
+  <meta name="description" content="Jason Fyrberg's portfolio. A green-screen terminal: choose a floppy disk to boot a project." />
+  <meta property="og:title" content="Jason Fyrberg — Portfolio" />
+  <meta property="og:description" content="Boot up. Choose a disk. The first one is an AI-powered CRM I vibecoded with Claude." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --bg:        #03100a;   /* deep phosphor-tinted black */
+      --bg-2:      #06190f;
+      --g:         #4dff7a;   /* primary phosphor green */
+      --g-bright:  #b9ffcb;   /* highlight */
+      --g-dim:     #1f8c43;   /* secondary / inactive */
+      --g-faint:   #0f4d26;   /* faint lines */
+      --glow:      0 0 4px rgba(77,255,122,0.55);
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html,body{ height:100%; }
+    body{
+      background:
+        radial-gradient(120% 120% at 50% 50%, var(--bg-2) 0%, var(--bg) 60%, #010904 100%);
+      color:var(--g);
+      font-family:'VT323', ui-monospace, 'DM Mono', monospace;
+      min-height:100vh;
+      display:flex; align-items:center; justify-content:center;
+      padding:28px 18px;
+      overflow-x:hidden;
+      text-shadow:var(--glow);
+      letter-spacing:0.4px;
+    }
+
+    /* CRT screen */
+    .crt{
+      width:100%; max-width:880px;
+      border:2px solid var(--g-faint);
+      border-radius:14px;
+      padding:30px 34px 26px;
+      position:relative;
+      background:
+        radial-gradient(130% 120% at 50% 0%, rgba(77,255,122,0.05), transparent 55%);
+      box-shadow:
+        inset 0 0 60px rgba(77,255,122,0.06),
+        inset 0 0 14px rgba(0,0,0,0.6),
+        0 0 40px rgba(0,0,0,0.7);
+      animation:poweron 0.5s ease-out both;
+    }
+    @keyframes poweron{
+      0%   { transform:scaleY(0.004) scaleX(0.7); filter:brightness(3); opacity:0; }
+      45%  { transform:scaleY(0.02) scaleX(1); filter:brightness(2.4); opacity:1; }
+      100% { transform:scaleY(1) scaleX(1); filter:brightness(1); opacity:1; }
+    }
+
+    /* scanlines + flicker (decorative, ignored by readers) */
+    .scanlines{
+      position:fixed; inset:0; pointer-events:none; z-index:9;
+      background:repeating-linear-gradient(
+        to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,0.16) 2px 4px);
+      mix-blend-mode:multiply;
+      animation:flicker 4s infinite steps(60);
+    }
+    @keyframes flicker{ 0%,100%{opacity:1;} 4%{opacity:0.86;} 8%{opacity:1;} 52%{opacity:0.94;} }
+    .scanlines::after{
+      content:""; position:absolute; inset:0;
+      background:radial-gradient(120% 120% at 50% 50%, transparent 60%, rgba(0,0,0,0.55) 100%);
+    }
+
+    /* top status bar */
+    .bar{
+      display:flex; justify-content:space-between; align-items:center;
+      font-size:19px; color:var(--g-dim); border-bottom:1px solid var(--g-faint);
+      padding-bottom:8px; margin-bottom:16px;
+    }
+    .bar .led{ display:inline-flex; align-items:center; gap:7px; }
+    .led .dot{
+      width:9px; height:9px; border-radius:50%; background:var(--g);
+      box-shadow:0 0 8px var(--g); animation:blink 1.6s steps(1) infinite;
+    }
+    @keyframes blink{ 0%,60%{opacity:1;} 61%,100%{opacity:0.25;} }
+
+    /* boot log */
+    .boot{ font-size:21px; color:var(--g-dim); min-height:84px; margin-bottom:6px; }
+    .boot .line{ white-space:pre-wrap; }
+
+    /* hero */
+    .hero{ margin:10px 0 4px; }
+    .title{
+      font-size:clamp(30px, 6vw, 52px); line-height:1.04; color:var(--g-bright);
+      text-shadow:0 0 8px rgba(185,255,203,0.6); letter-spacing:1px;
+    }
+    .prompt{ font-size:24px; color:var(--g); margin-top:8px; }
+    .cursor{ display:inline-block; width:11px; height:20px; background:var(--g);
+      box-shadow:0 0 8px var(--g); margin-left:4px; vertical-align:-2px;
+      animation:caret 1.05s steps(1) infinite; }
+    @keyframes caret{ 0%,50%{opacity:1;} 51%,100%{opacity:0;} }
+
+    /* floppy rack */
+    .rack{
+      display:flex; flex-wrap:wrap; gap:26px; margin:26px 0 22px;
+      justify-content:center;
+    }
+    .slot{ display:flex; flex-direction:column; align-items:center; gap:9px; width:158px; }
+
+    .floppy{
+      position:relative; width:158px; height:158px;
+      background:linear-gradient(160deg, #061d10, #04130b);
+      border:2px solid var(--g); color:var(--g);
+      clip-path:polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 0 100%);
+      display:flex; flex-direction:column; align-items:center;
+      padding:13px 12px 14px; cursor:pointer; font-family:inherit;
+      text-shadow:var(--glow);
+      box-shadow:inset 0 0 14px rgba(77,255,122,0.10);
+      transition:transform .13s ease, background .13s ease, box-shadow .13s ease;
+    }
+    .floppy .shutter{
+      width:52px; height:30px; background:#0a2c18; border:2px solid var(--g);
+      position:relative; margin-bottom:9px; flex-shrink:0;
+    }
+    .floppy .shutter::after{
+      content:""; position:absolute; right:6px; top:5px; bottom:5px; width:11px;
+      background:#031108; border:1px solid var(--g);
+    }
+    .floppy .label{
+      width:100%; flex:1; border:2px solid var(--g-dim);
+      background:rgba(77,255,122,0.05);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:3px; padding:6px 6px;
+    }
+    .label .fname{ font-size:20px; line-height:1; color:var(--g-bright); letter-spacing:0.5px; }
+    .label .fdesc{ font-size:15px; line-height:1.05; color:var(--g-dim); text-align:center; }
+
+    .floppy:hover, .floppy:focus-visible{
+      transform:translateY(-6px);
+      background:linear-gradient(160deg, #0c3a1e, #08260f);
+      box-shadow:0 0 22px rgba(77,255,122,0.4), inset 0 0 16px rgba(77,255,122,0.2);
+      outline:none;
+    }
+    .floppy:focus-visible{ border-color:var(--g-bright); }
+
+    .floppy.locked{ cursor:not-allowed; opacity:0.42; }
+    .floppy.locked:hover, .floppy.locked:focus-visible{
+      transform:none; background:linear-gradient(160deg,#061d10,#04130b);
+      box-shadow:inset 0 0 14px rgba(77,255,122,0.10);
+    }
+
+    .cap{ font-size:18px; color:var(--g); }
+    .cap.locked{ color:var(--g-dim); }
+
+    /* drive readout line */
+    .drive{ font-size:20px; color:var(--g); min-height:24px; margin-top:4px; }
+
+    /* footer */
+    .foot{
+      border-top:1px solid var(--g-faint); padding-top:14px; margin-top:18px;
+      font-size:20px; color:var(--g-dim);
+      display:flex; flex-wrap:wrap; gap:6px 18px; justify-content:space-between; align-items:baseline;
+    }
+    .foot .player{ color:var(--g); }
+    .foot a{ color:var(--g); text-decoration:none; border-bottom:1px solid var(--g-faint); }
+    .foot a:hover{ color:var(--g-bright); border-bottom-color:var(--g-bright); }
+
+    /* loader overlay */
+    .loader{
+      position:fixed; inset:0; z-index:20; background:var(--bg);
+      display:none; flex-direction:column; align-items:center; justify-content:center;
+      gap:16px; color:var(--g); font-size:26px; text-shadow:var(--glow); padding:24px;
+    }
+    .loader.show{ display:flex; }
+    .loader .big{ font-size:30px; color:var(--g-bright); }
+    .loader .barwrap{ width:min(420px,80vw); height:22px; border:2px solid var(--g); padding:3px; }
+    .loader .bar{ height:100%; width:0; background:var(--g); box-shadow:0 0 10px var(--g);
+      animation:fill 1s ease-in forwards; }
+    @keyframes fill{ to{ width:100%; } }
+
+    .skip{ position:fixed; bottom:14px; right:18px; z-index:12; font-size:16px; color:var(--g-dim);
+      background:none; border:none; font-family:inherit; cursor:pointer; text-shadow:var(--glow); }
+    .skip:hover{ color:var(--g); }
+
+    @media (max-width:560px){
+      .crt{ padding:22px 18px; }
+      .rack{ gap:18px; }
+      .slot, .floppy{ width:138px; }
+      .floppy{ height:138px; }
+    }
+    @media (prefers-reduced-motion:reduce){
+      .crt{ animation:none; }
+      .scanlines{ animation:none; }
+      .led .dot, .cursor{ animation:none; }
+      .loader .bar{ animation:none; width:100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <main class="crt" id="crt">
+    <div class="bar">
+      <span>FYRBERG-DOS v1.0</span>
+      <span class="led">DRIVE A: <span class="dot" aria-hidden="true"></span></span>
+    </div>
+
+    <div class="boot" id="boot" aria-hidden="true"></div>
+
+    <div class="hero" id="hero" style="opacity:0;">
+      <div class="title">WELCOME TO JASON<br>FYRBERG'S PORTFOLIO</div>
+      <div class="prompt">Choose a disk to continue<span class="cursor" aria-hidden="true"></span></div>
+    </div>
+
+    <div class="rack" id="rack" style="opacity:0;">
+      <div class="slot">
+        <button class="floppy" data-href="crmdemo.html" data-name="DEMOCRM.EXE" aria-label="Boot DEMOCRM.EXE, an AI-powered CRM demo">
+          <span class="shutter" aria-hidden="true"></span>
+          <span class="label"><span class="fname">DEMO CRM</span><span class="fdesc">AI-powered CRM demo</span></span>
+        </button>
+        <div class="cap">&#9654; READY</div>
+      </div>
+
+      <div class="slot">
+        <button class="floppy locked" disabled aria-label="Empty drive slot, coming soon">
+          <span class="shutter" aria-hidden="true"></span>
+          <span class="label"><span class="fname">??????</span><span class="fdesc">coming soon</span></span>
+        </button>
+        <div class="cap locked">&#9633; EMPTY</div>
+      </div>
+
+      <div class="slot">
+        <button class="floppy locked" disabled aria-label="Empty drive slot, coming soon">
+          <span class="shutter" aria-hidden="true"></span>
+          <span class="label"><span class="fname">??????</span><span class="fdesc">coming soon</span></span>
+        </button>
+        <div class="cap locked">&#9633; EMPTY</div>
+      </div>
+    </div>
+
+    <div class="drive" id="drive" style="opacity:0;">A:\&gt; _</div>
+
+    <div class="foot" id="foot" style="opacity:0;">
+      <span class="player">PLAYER 1: JASON FYRBERG</span>
+      <span>
+        <a href="mailto:JasonFyrberg@gmail.com">JasonFyrberg@gmail.com</a>
+        &nbsp;·&nbsp;
+        <a href="https://www.linkedin.com/in/jfyrberg" target="_blank" rel="noopener noreferrer">linkedin.com/in/jfyrberg</a>
+      </span>
+    </div>
+  </main>
+
+  <button class="skip" id="skip">[ skip &#9654;&#9654; ]</button>
+
+  <div class="loader" id="loader" role="status" aria-live="polite">
+    <div>INSERTING DISK A:</div>
+    <div class="big" id="loaderGame">LOADING...</div>
+    <div class="barwrap"><div class="bar"></div></div>
+    <div style="font-size:18px; color:var(--g-dim);">please wait</div>
+  </div>
+
+  <script>
+    (function(){
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var bootEl = document.getElementById('boot');
+      var lines = [
+        "FYRBERG-DOS v1.0  (c) 2026",
+        "MEMORY OK ........ 640K",
+        "READING DRIVE A: ........ OK",
+        ""
+      ];
+      var revealEls = ['hero','rack','drive','foot'];
+      var done = false;
+
+      function reveal(){
+        if (done) return; done = true;
+        bootEl.innerHTML = lines.map(function(l){ return '<div class="line">'+l+'</div>'; }).join('');
+        revealEls.forEach(function(id, i){
+          var el = document.getElementById(id);
+          el.style.transition = 'opacity .35s ease';
+          setTimeout(function(){ el.style.opacity = '1'; }, reduce ? 0 : 120 + i*130);
+        });
+        var skip = document.getElementById('skip');
+        if (skip) skip.style.display = 'none';
+      }
+
+      // typed boot sequence
+      if (reduce) {
+        reveal();
+      } else {
+        var li = 0, ci = 0;
+        bootEl.innerHTML = '<div class="line" id="bl"></div>';
+        var cur = document.getElementById('bl');
+        (function type(){
+          if (done) return;
+          if (li >= lines.length){ reveal(); return; }
+          var text = lines[li];
+          if (ci < text.length){
+            cur.textContent += text.charAt(ci++);
+            setTimeout(type, 16);
+          } else {
+            bootEl.insertAdjacentHTML('beforeend', '<div class="line" id="bl'+(li+1)+'"></div>');
+            cur = document.getElementById('bl'+(li+1));
+            li++; ci = 0;
+            setTimeout(type, 90);
+          }
+        })();
+      }
+
+      document.getElementById('skip').addEventListener('click', reveal);
+      document.addEventListener('keydown', function(e){
+        if (!done && (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape')) { reveal(); }
+      });
+
+      // disk launch
+      var loader = document.getElementById('loader');
+      var loaderGame = document.getElementById('loaderGame');
+      var drive = document.getElementById('drive');
+
+      function launch(btn){
+        var href = btn.getAttribute('data-href');
+        var name = btn.getAttribute('data-name') || 'PROGRAM';
+        if (!href) return;
+        if (reduce){ window.location.href = href; return; }
+        loaderGame.textContent = 'LOADING ' + name;
+        loader.classList.add('show');
+        setTimeout(function(){ window.location.href = href; }, 1050);
+      }
+
+      var floppies = Array.prototype.slice.call(document.querySelectorAll('.floppy'));
+      floppies.forEach(function(btn){
+        btn.addEventListener('click', function(){
+          if (btn.classList.contains('locked')) return;
+          if (!done){ reveal(); return; }
+          launch(btn);
+        });
+        if (btn.classList.contains('locked')){
+          btn.addEventListener('mouseenter', function(){ drive.textContent = 'A:\\> DISK NOT FOUND'; });
+          btn.addEventListener('mouseleave', function(){ drive.textContent = 'A:\\> _'; });
+        } else {
+          btn.addEventListener('mouseenter', function(){ drive.textContent = 'A:\\> RUN ' + btn.getAttribute('data-name'); });
+          btn.addEventListener('mouseleave', function(){ drive.textContent = 'A:\\> _'; });
+        }
+      });
+
+      // arrow-key navigation between playable/visible floppies
+      document.addEventListener('keydown', function(e){
+        if (!done) return;
+        if (['ArrowRight','ArrowLeft','ArrowUp','ArrowDown'].indexOf(e.key) === -1) return;
+        var idx = floppies.indexOf(document.activeElement);
+        if (idx === -1){ floppies[0].focus(); e.preventDefault(); return; }
+        var next = (e.key === 'ArrowRight' || e.key === 'ArrowDown') ? idx+1 : idx-1;
+        if (next < 0) next = floppies.length-1;
+        if (next >= floppies.length) next = 0;
+        floppies[next].focus();
+        e.preventDefault();
+      });
+    })();
+  </script>
+</body>
+</html>

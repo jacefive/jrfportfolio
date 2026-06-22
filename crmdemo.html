@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>J Fyrberg's CRM Demo</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDY0IDY0Ij48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxMiIgZmlsbD0iIzE2MWIyMiIvPjx0ZXh0IHg9IjMyIiB5PSIzNCIgZm9udC1mYW1pbHk9IkRNIFNhbnMsIC1hcHBsZS1zeXN0ZW0sIFNlZ29lIFVJLCBSb2JvdG8sIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMzAiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiM1OGE2ZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJjZW50cmFsIj5KRjwvdGV4dD48L3N2Zz4=" />
+  <meta property="og:title" content="J Fyrberg's CRM Demo" />
+  <meta property="og:description" content="A CRM demo built in a single HTML file with Claude. A job-search tracker you can try in your browser." />
+  <meta property="og:image" content="" />
+  <meta property="og:url" content="" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.7/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'DM Sans', sans-serif; }
+    body { background: #0d1117; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #3a4150; border-radius: 4px; }
+    .row:hover { background: #1c2230 !important; cursor: pointer; }
+    .sortable-th:hover { color: #b1bac4 !important; background: #1c2230; }
+    input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
+    input, textarea, select { color: #e6edf3; }
+    input::placeholder, textarea::placeholder { color: #6e7681; }
+    select option { background: #161b22; color: #e6edf3; }
+    input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.8); }
+    input:focus, textarea:focus, select:focus { outline: 2px solid #58a6ff; outline-offset: 1px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useCallback } = React;
+
+    const STATUS_CFG = {
+      Prospecting:    { bg: "#1a1530", text: "#8957e5", dot: "#8b5cf6", border: "#3a2d5c" },
+      Applied:        { bg: "#10243e", text: "#388bfd", dot: "#58a6ff", border: "#1f3a5f" },
+      Interviewing:   { bg: "#1f1708", text: "#fbbf24", dot: "#f59e0b", border: "#3d2f10" },
+      Offer:          { bg: "#0d2a1c", text: "#3fb950", dot: "#10b981", border: "#1f4d36" },
+      "Not Selected": { bg: "#2a1414", text: "#da3633", dot: "#ef4444", border: "#5c2626" },
+      Withdrew:       { bg: "#1c2230", text: "#b1bac4", dot: "#6e7681", border: "#2a3038" },
+      "On Hold":      { bg: "#241a0c", text: "#fb923c", dot: "#fb923c", border: "#5a3d1a" },
+    };
+
+    const STATUSES = ["Prospecting","Applied","Interviewing","Offer","Not Selected","Withdrew","On Hold"];
+
+    const INITIAL_COMPANIES = [
+      {
+        id:"1", company:"Demo Company 1", role:"Sales Development Representative", category:"SDR/BDR",
+        status:"Interviewing", dateApplied:"2026-06-08", comp:"$70k base + commission", location:"Remote",
+        nextFollowUp:"Send a thank-you note after the second-round interview.", followUpDate:"2026-07-02",
+        contacts:[
+          { id:"c1", name:"Alex Morgan", title:"VP of Sales", notes:"Direct and to the point. Cares about pipeline discipline." },
+          { id:"c2", name:"Jordan Lee", title:"Sales Manager", notes:"Ran the first interview. Friendly, asked a lot about outbound process." },
+        ],
+        activityLog:[
+          { id:"l1", date:"Jun 8 2026", entry:"Applied through the company careers page." },
+          { id:"l2", date:"Jun 15 2026", entry:"First-round phone screen with Jordan. Went well." },
+          { id:"l3", date:"Jun 20 2026", entry:"Second-round interview scheduled for next week." },
+        ],
+      },
+      {
+        id:"2", company:"Demo Company 2", role:"Account Executive", category:"Sales",
+        status:"Applied", dateApplied:"2026-06-12", comp:"$90k base, $180k OTE", location:"Hybrid",
+        nextFollowUp:"Follow up if there is no response by the end of the week.", followUpDate:"2026-06-27",
+        contacts:[
+          { id:"c3", name:"Taylor Brooks", title:"Head of Talent", notes:"Recruiter contact. Responsive over email." },
+          { id:"c4", name:"Sam Rivera", title:"Director of Sales", notes:"Hiring manager for the role." },
+          { id:"c5", name:"Casey Nguyen", title:"Senior Account Executive", notes:"Would be a peer on the team. Connected on LinkedIn." },
+        ],
+        activityLog:[
+          { id:"l4", date:"Jun 12 2026", entry:"Submitted application with a tailored resume." },
+          { id:"l5", date:"Jun 13 2026", entry:"Recruiter confirmed receipt and said they would review this week." },
+        ],
+      },
+      {
+        id:"3", company:"Demo Company 3", role:"Business Development Representative", category:"SDR/BDR",
+        status:"Prospecting", dateApplied:"", comp:"To be discussed", location:"Remote",
+        nextFollowUp:"Ask a contact for a warm intro before applying.", followUpDate:"2026-06-30",
+        contacts:[
+          { id:"c6", name:"Riley Carter", title:"Sales Operations Lead", notes:"Met at a virtual event. Open to a quick chat." },
+          { id:"c7", name:"Morgan Patel", title:"Recruiter", notes:"Posted the role. Have not reached out yet." },
+        ],
+        activityLog:[
+          { id:"l6", date:"Jun 18 2026", entry:"Found the role through a referral. Researching the team before applying." },
+        ],
+      },
+    ];
+
+    function Badge({ status }) {
+      const c = STATUS_CFG[status] || STATUS_CFG.Applied;
+      return (
+        <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"2px 10px", borderRadius:999,
+          fontSize:11, fontWeight:500, background:c.bg, color:c.text, border:`1px solid ${c.border}`, whiteSpace:"nowrap" }}>
+          <span style={{ width:6, height:6, borderRadius:"50%", background:c.dot, flexShrink:0 }} />
+          {status}
+        </span>
+      );
+    }
+
+    function InfoCell({ label, value }) {
+      return (
+        <div>
+          <div style={{ fontSize:10, color:"#6e7681", textTransform:"uppercase", fontWeight:600, letterSpacing:"0.05em" }}>{label}</div>
+          <div style={{ fontSize:12, color:"#c9d1d9", marginTop:2, lineHeight:1.4 }}>{value || "—"}</div>
+        </div>
+      );
+    }
+
+    function App() {
+      const SPLASH_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MDAiIGhlaWdodD0iNDAwIiB2aWV3Qm94PSIwIDAgNjAwIDQwMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMTYxYjIyIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMGQxMTE3Ii8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjYwMCIgaGVpZ2h0PSI0MDAiIHJ4PSIxNiIgZmlsbD0idXJsKCNnKSIvPjxyZWN0IHg9IjI0MCIgeT0iOTIiIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiByeD0iMjIiIGZpbGw9IiMwZDExMTciIHN0cm9rZT0iIzMwMzYzZCIgc3Ryb2tlLXdpZHRoPSIyIi8+PHRleHQgeD0iMzAwIiB5PSIxNTIiIGZvbnQtZmFtaWx5PSJETSBTYW5zLCAtYXBwbGUtc3lzdGVtLCBTZWdvZSBVSSwgUm9ib3RvLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjU0IiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjNThhNmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCI+SkY8L3RleHQ+PHRleHQgeD0iMzAwIiB5PSIyNzYiIGZvbnQtZmFtaWx5PSJETSBTYW5zLCAtYXBwbGUtc3lzdGVtLCBTZWdvZSBVSSwgUm9ib3RvLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjI2IiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjZTZlZGYzIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5KIEZ5cmJlcmcncyBDUk0gRGVtbzwvdGV4dD48dGV4dCB4PSIzMDAiIHk9IjMxMCIgZm9udC1mYW1pbHk9IkRNIFNhbnMsIC1hcHBsZS1zeXN0ZW0sIFNlZ29lIFVJLCBSb2JvdG8sIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZvbnQtd2VpZ2h0PSI0MDAiIGZpbGw9IiM4Yjk0OWUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkJ1aWx0IHdpdGggQ2xhdWRlPC90ZXh0Pjwvc3ZnPg==";
+      const HEADER_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PHJlY3Qgd2lkdGg9IjEyMCIgaGVpZ2h0PSIxMjAiIHJ4PSIyMCIgZmlsbD0iIzE2MWIyMiIvPjxyZWN0IHg9IjEwIiB5PSIxMCIgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIHJ4PSIxNCIgZmlsbD0iIzBkMTExNyIgc3Ryb2tlPSIjMzAzNjNkIiBzdHJva2Utd2lkdGg9IjIiLz48dGV4dCB4PSI2MCIgeT0iNjAiIGZvbnQtZmFtaWx5PSJETSBTYW5zLCAtYXBwbGUtc3lzdGVtLCBTZWdvZSBVSSwgUm9ib3RvLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQ2IiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjNThhNmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCI+SkY8L3RleHQ+PC9zdmc+";
+      const [companies, setCompanies] = useState([]);
+      const [loading, setLoading]     = useState(true);
+      const [selectedId, setSelectedId] = useState(null);
+      const [search, setSearch]         = useState("");
+      const [statusFilter, setFilter]   = useState("All");
+      const [activeTab, setTab]         = useState("log");
+      const [newActivity, setNewAct]    = useState("");
+      const [showAddContact, setShowAC] = useState(false);
+      const [newContact, setNC]         = useState({ name:"", title:"", notes:"" });
+      const [editingContactId, setEditingContactId] = useState(null);
+      const [editContact, setEditContact] = useState({ name:"", title:"", notes:"" });
+      const [showAddCo, setShowCo]      = useState(false);
+      const [newCo, setNewCoData]       = useState({ company:"", role:"", status:"Prospecting", comp:"", location:"", nextFollowUp:"", followUpDate:"" });
+      const [showEditCo, setShowEditCo] = useState(false);
+      const [editData, setEditData]     = useState(null);
+      const [sortBy, setSortBy]         = useState("added");
+      const [sortDir, setSortDir]       = useState("asc");
+      const [editingLogId, setEditingLogId] = useState(null);
+      const [editingLogText, setEditingLogText] = useState("");
+      const [editingLogDate, setEditingLogDate] = useState("");
+      const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 768);
+      const [showSplash, setShowSplash] = useState(true);
+      const [splashFade, setSplashFade] = useState(false);
+      // --- AI follow-up generation (calls a server-side Netlify Function; key never touches the browser) ---
+      const [aiLoading, setAiLoading] = useState(false);
+      const [aiDraft, setAiDraft]     = useState(null);
+      const [aiMetrics, setAiMetrics] = useState(null);
+      const [aiError, setAiError]     = useState(null);
+      const [showAiInfo, setShowAiInfo] = useState(false);
+      const [showIntro, setShowIntro] = useState(false);
+      const fileInputRef = React.useRef(null);
+
+      useEffect(() => {
+        const onResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener("resize", onResize);
+        return () => window.removeEventListener("resize", onResize);
+      }, []);
+
+      useEffect(() => {
+        // Splash: show the splash card for a beat, then fade out.
+        const fadeT = setTimeout(() => setSplashFade(true), 1400);
+        const hideT = setTimeout(() => setShowSplash(false), 2000);
+        return () => { clearTimeout(fadeT); clearTimeout(hideT); };
+      }, []);
+
+      useEffect(() => {
+        // Welcome intro: show once per session, right after the splash fades.
+        let seen = false;
+        try { seen = sessionStorage.getItem('jfcrm-intro-seen') === '1'; } catch {}
+        if (seen) return;
+        const t = setTimeout(() => setShowIntro(true), 2100);
+        return () => clearTimeout(t);
+      }, []);
+
+      const dismissIntro = () => {
+        setShowIntro(false);
+        try { sessionStorage.setItem('jfcrm-intro-seen', '1'); } catch {}
+      };
+
+      useEffect(() => {
+        // Demo mode: each visitor gets their own fresh copy in their browser.
+        // We always start from the seed data so everyone sees the same clean demo,
+        // but their edits persist locally during their session.
+        try {
+          const saved = sessionStorage.getItem('jfcrm-demo');
+          setCompanies(saved ? JSON.parse(saved) : INITIAL_COMPANIES);
+        } catch {
+          setCompanies(INITIAL_COMPANIES);
+        }
+        setLoading(false);
+      }, []);
+
+      const [savedFlash, setSavedFlash] = useState(false);
+      const savedTimer = React.useRef(null);
+
+      const persist = useCallback((data) => {
+        setCompanies(data);
+        setSavedFlash(true);
+        if (savedTimer.current) clearTimeout(savedTimer.current);
+        savedTimer.current = setTimeout(() => setSavedFlash(false), 2000);
+        try { sessionStorage.setItem('jfcrm-demo', JSON.stringify(data)); } catch(e) {}
+      }, []);
+
+      const exportCSV = () => {
+        const headers = ["Company","Role","Category","Status","Date Applied","Comp","Location","Contacts","Last Activity","Next Follow-Up"];
+        const rows = companies.map(c => [
+          c.company, c.role, c.category, c.status, c.dateApplied, c.comp, c.location,
+          c.contacts.map(ct => `${ct.name} (${ct.title})`).join("; "),
+          c.activityLog[0]?.entry || "",
+          c.nextFollowUp,
+        ]);
+        const csv = [headers, ...rows]
+          .map(r => r.map(v => `"${String(v || "").replace(/"/g, '""')}"`).join(","))
+          .join("\n");
+        const blob = new Blob([csv], { type:"text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `JF_JobHuntCRM_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+
+      const exportJSON = () => {
+        const blob = new Blob([JSON.stringify(companies, null, 2)], { type:"application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `JF_CRM_Backup_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+
+      const importJSON = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const data = JSON.parse(ev.target.result);
+            if (Array.isArray(data)) {
+              persist(data);
+              setSelectedId(null);
+              alert(`Restored ${data.length} companies successfully.`);
+            } else {
+              alert("Invalid backup file — expected an array of companies.");
+            }
+          } catch {
+            alert("Could not read file. Make sure it's a valid CRM backup.");
+          }
+        };
+        reader.readAsText(file);
+        e.target.value = "";
+      };
+
+      const selected = companies.find(c => c.id === selectedId) || null;
+
+      const DEFAULT_DIR = { added:"asc", company:"asc", role:"asc", status:"asc", date:"desc", followup:"asc" };
+      const applySort = (key) => {
+        if (sortBy === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+        else { setSortBy(key); setSortDir(DEFAULT_DIR[key] || "asc"); }
+      };
+
+      const dir = sortDir === "asc" ? 1 : -1;
+      const filtered = companies.filter(c =>
+        (statusFilter === "All" || c.status === statusFilter) &&
+        (!search || c.company.toLowerCase().includes(search.toLowerCase()) || c.role.toLowerCase().includes(search.toLowerCase()))
+      ).sort((a, b) => {
+        if (sortBy === "company") return a.company.localeCompare(b.company) * dir;
+        if (sortBy === "role")    return (a.role || "").localeCompare(b.role || "") * dir;
+        if (sortBy === "status")  return (STATUSES.indexOf(a.status) - STATUSES.indexOf(b.status)) * dir;
+        if (sortBy === "date") {
+          const da = a.dateApplied ? new Date(a.dateApplied).getTime() : 0;
+          const db = b.dateApplied ? new Date(b.dateApplied).getTime() : 0;
+          return (da - db) * dir;
+        }
+        if (sortBy === "followup") {
+          // companies with no follow-up date always sink to the bottom, either direction
+          if (!a.followUpDate && !b.followUpDate) return 0;
+          if (!a.followUpDate) return 1;
+          if (!b.followUpDate) return -1;
+          return (new Date(a.followUpDate) - new Date(b.followUpDate)) * dir;
+        }
+        return (companies.indexOf(a) - companies.indexOf(b)) * dir; // "added" = insertion order
+      });
+
+      const stats = {
+        total:    companies.length,
+        active:   companies.filter(c => ["Prospecting","Applied","Interviewing"].includes(c.status)).length,
+        contacts: companies.filter(c => c.contacts.length > 0).length,
+        rejected: companies.filter(c => c.status === "Not Selected").length,
+      };
+
+      const today = () => new Date().toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+
+      const todayISO = () => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+      };
+
+      // Convert any stored date (ISO, or legacy text like "Jun 6 2026") to ISO for a date input.
+      const toISO = (val) => {
+        if (!val) return "";
+        if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+        const d = new Date(val);
+        if (isNaN(d.getTime())) return "";
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+      };
+
+      // Convert an ISO date back to the text format the activity log uses (e.g. "Jun 6 2026").
+      const fromISO = (iso) => {
+        if (!iso) return "";
+        const d = new Date(iso + "T12:00:00");
+        if (isNaN(d.getTime())) return iso;
+        return d.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" }).replace(/,/, "");
+      };
+
+      const track = () => {};  // analytics removed for the public demo
+
+      // Calls the server-side function, which sends the prompt to Claude and returns the note + real usage metrics.
+      const generateFollowup = async (company) => {
+        if (!company) return;
+        setAiLoading(true); setAiDraft(null); setAiMetrics(null); setAiError(null);
+        try {
+          const firstContact = (company.contacts && company.contacts[0]) || null;
+          const res = await fetch('/.netlify/functions/generate-followup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              companyName: company.company,
+              contactName: firstContact ? firstContact.name : 'there',
+              contactTitle: firstContact ? firstContact.title : '',
+              status: company.status,
+              activityLog: (company.activityLog || []).map(l => l.entry).join(' | '),
+            }),
+          });
+          if (res.status === 429) { setAiError("The demo is rate limited right now. Try again in a little while."); return; }
+          if (!res.ok) { setAiError("The AI hit a snag. Give it another try in a moment."); return; }
+          const data = await res.json();
+          setAiDraft(data.draft);
+          setAiMetrics(data.metrics);
+          // Save this generation into the company's record so it persists and shows in the AI Drafts tab.
+          const entry = {
+            id: 'ai' + Date.now(),
+            text: data.draft,
+            addressedTo: firstContact ? firstContact.name : 'there',
+            date: new Date().toISOString(),
+            metrics: data.metrics,
+          };
+          persist(companies.map(c => c.id === company.id
+            ? { ...c, aiFollowups: [entry, ...(c.aiFollowups || [])] }
+            : c));
+          track('ai_followup_generated', { company: company.company });
+        } catch (e) {
+          setAiError("Couldn't reach the AI. Check back in a moment.");
+        } finally {
+          setAiLoading(false);
+        }
+      };
+
+      const addLog = () => {
+        if (!newActivity.trim() || !selected) return;
+        persist(companies.map(c => c.id === selectedId
+          ? { ...c, activityLog: [{ id: Date.now().toString(), date: today(), entry: newActivity }, ...c.activityLog] }
+          : c));
+        setNewAct("");
+        track('activity_logged', { company: selected.company });
+      };
+
+      const addContact = () => {
+        if (!newContact.name.trim()) return;
+        persist(companies.map(c => c.id === selectedId
+          ? { ...c, contacts: [...c.contacts, { ...newContact, id: Date.now().toString() }] }
+          : c));
+        setNC({ name:"", title:"", notes:"" });
+        setShowAC(false);
+        track('contact_added', { company: selected ? selected.company : null });
+      };
+
+      const addCompany = () => {
+        if (!newCo.company.trim()) return;
+        const autoDate = (newCo.status === "Applied" && !newCo.dateApplied) ? todayISO() : (newCo.dateApplied || "");
+        const co = { ...newCo, id: Date.now().toString(), category:"SDR/BDR", dateApplied: autoDate,
+          contacts:[], activityLog:[{ id: Date.now().toString(), date: today(), entry:"Added to pipeline." }] };
+        persist([co, ...companies]);
+        setSelectedId(co.id);
+        setTab("log");
+        setShowCo(false);
+        setNewCoData({ company:"", role:"", status:"Prospecting", comp:"", location:"", nextFollowUp:"", followUpDate:"" });
+        track('company_added', { company: co.company });
+      };
+
+      const changeStatus = (id, status) => {
+        persist(companies.map(c => c.id === id
+          ? { ...c, status,
+              dateApplied: (status === "Applied" && !c.dateApplied) ? todayISO() : c.dateApplied,
+              activityLog: [{ id: Date.now().toString(), date: today(), entry: `Status → ${status}` }, ...c.activityLog] }
+          : c));
+        track('status_changed', { status });
+      };
+
+      const openEdit = () => {
+        if (!selected) return;
+        setEditData({ company: selected.company, role: selected.role, status: selected.status,
+          comp: selected.comp, location: selected.location, dateApplied: selected.dateApplied,
+          nextFollowUp: selected.nextFollowUp, followUpDate: selected.followUpDate || "" });
+        setShowEditCo(true);
+        track('edit_opened', { company: selected.company });
+      };
+
+      const saveEdit = () => {
+        if (!editData || !selected) return;
+        const finalData = { ...editData };
+        if (finalData.status === "Applied" && !finalData.dateApplied) finalData.dateApplied = todayISO();
+        persist(companies.map(c => c.id === selected.id ? { ...c, ...finalData } : c));
+        setShowEditCo(false);
+        setEditData(null);
+        track('company_edited');
+      };
+
+
+      const deleteCompany = () => {
+        if (!selected) return;
+        if (window.confirm(`Remove ${selected.company} from your pipeline? This cannot be undone.`)) {
+          persist(companies.filter(c => c.id !== selected.id));
+          setSelectedId(null);
+          setShowEditCo(false);
+          setEditData(null);
+        }
+      };
+
+      const deleteLog = (logId) => {
+        if (!selected) return;
+        if (window.confirm("Remove this activity entry? This cannot be undone.")) {
+          persist(companies.map(c => c.id === selectedId
+            ? { ...c, activityLog: c.activityLog.filter(l => l.id !== logId) }
+            : c));
+        }
+      };
+
+      const updateLog = (logId) => {
+        if (!editingLogText.trim()) return;
+        persist(companies.map(c => c.id === selectedId
+          ? { ...c, activityLog: c.activityLog.map(l => l.id === logId ? { ...l, entry: editingLogText, date: editingLogDate ? fromISO(editingLogDate) : l.date } : l) }
+          : c));
+        setEditingLogId(null);
+        setEditingLogText("");
+        setEditingLogDate("");
+      };
+
+      const moveLog = (logId, direction) => {
+        if (!selected) return;
+        const logs = [...selected.activityLog];
+        const idx = logs.findIndex(l => l.id === logId);
+        const newIdx = idx + direction;
+        if (newIdx < 0 || newIdx >= logs.length) return;
+        [logs[idx], logs[newIdx]] = [logs[newIdx], logs[idx]];
+        persist(companies.map(c => c.id === selectedId ? { ...c, activityLog: logs } : c));
+      };
+
+      const deleteContact = (contactId) => {
+        if (!selected) return;
+        if (window.confirm("Remove this contact? This cannot be undone.")) {
+          persist(companies.map(c => c.id === selectedId
+            ? { ...c, contacts: c.contacts.filter(ct => ct.id !== contactId) }
+            : c));
+        }
+      };
+
+      const startEditContact = (ct) => {
+        setEditingContactId(ct.id);
+        setEditContact({ name: ct.name || "", title: ct.title || "", notes: ct.notes || "" });
+      };
+
+      const updateContact = (contactId) => {
+        if (!editContact.name.trim()) return;
+        persist(companies.map(c => c.id === selectedId
+          ? { ...c, contacts: c.contacts.map(ct => ct.id === contactId ? { ...ct, ...editContact } : ct) }
+          : c));
+        setEditingContactId(null);
+      };
+
+      if (loading) return (
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", color:"#6e7681", fontSize:14 }}>
+          Loading your pipeline...
+        </div>
+      );
+
+      return (
+        <div style={{ background:"#0d1117", minHeight:"100vh", display:"flex", flexDirection:"column" }}>
+
+          {/* SPLASH SCREEN */}
+          {showSplash && (
+            <div style={{
+              position:"fixed", inset:0, zIndex:100,
+              background:"#161b22",
+              display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+              gap:20, padding:24,
+              opacity: splashFade ? 0 : 1,
+              transition:"opacity 0.6s ease",
+              pointerEvents: splashFade ? "none" : "auto"
+            }}
+            onClick={() => { setSplashFade(true); setTimeout(() => setShowSplash(false), 600); }}>
+              <img src={SPLASH_IMG} alt="J Fyrberg's CRM demo"
+                style={{ maxWidth:"min(440px, 85vw)", width:"100%", height:"auto", borderRadius:14, boxShadow:"0 20px 60px rgba(0,0,0,0.5)" }} />
+              <div style={{ color:"#e6edf3", fontSize:14, fontWeight:500, letterSpacing:"0.02em" }}>Spinning up the demo…</div>
+            </div>
+          )}
+
+          {/* HEADER */}
+          <div style={{ background:"#161b22", color:"white", padding: isMobile ? "12px 14px" : "12px 20px", display:"flex", alignItems: isMobile ? "stretch" : "center", justifyContent:"space-between", flexShrink:0, flexDirection: isMobile ? "column" : "row", gap: isMobile ? 10 : 0 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <img src={HEADER_IMG} alt="J Fyrberg's CRM demo" style={{ height:42, width:"auto", borderRadius:6, flexShrink:0 }} />
+              <div>
+                <div style={{ fontSize:15, fontWeight:600, letterSpacing:"-0.3px" }}>J Fyrberg's CRM Demo</div>
+                <div style={{ fontSize:11, color:"#8b949e", marginTop:1 }}>A CRM demo built with Claude · Try it, it's yours</div>
+              </div>
+            </div>
+            <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap: isMobile ? "wrap" : "nowrap" }}>
+              {savedFlash && <span style={{ fontSize:12, color:"#10b981", fontWeight:500 }}>✓ Saved</span>}
+              <input ref={fileInputRef} type="file" accept=".json" style={{ display:"none" }} onChange={importJSON} />
+              <button onClick={() => {
+                  if (window.confirm("Reset the demo back to the original sample data? Any changes you've made will be cleared.")) {
+                    try { sessionStorage.removeItem('jfcrm-demo'); } catch(e) {}
+                    setCompanies(INITIAL_COMPANIES);
+                    setSelectedId(null);
+                    
+                  }
+                }}
+                style={{ background:"#21262d", color:"#6e7681", border:"1px solid #c9d1d9", padding:"7px 14px", borderRadius:8, fontSize:13, fontWeight:500, cursor:"pointer", flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
+                Reset to Original Data
+              </button>
+              <button onClick={() => fileInputRef.current.click()}
+                style={{ background:"#21262d", color:"#6e7681", border:"1px solid #c9d1d9", padding:"7px 14px", borderRadius:8, fontSize:13, fontWeight:500, cursor:"pointer", flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
+                📂 Restore
+              </button>
+              <button onClick={exportJSON}
+                style={{ background:"#21262d", color:"#6e7681", border:"1px solid #c9d1d9", padding:"7px 14px", borderRadius:8, fontSize:13, fontWeight:500, cursor:"pointer", flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
+                💾 Backup
+              </button>
+              <button onClick={exportCSV}
+                style={{ background:"#21262d", color:"#6e7681", border:"1px solid #c9d1d9", padding:"7px 14px", borderRadius:8, fontSize:13, fontWeight:500, cursor:"pointer", flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
+                ↓ CSV
+              </button>
+              <button onClick={() => setShowCo(true)}
+                style={{ background:"#58a6ff", color:"white", border:"none", padding:"7px 14px", borderRadius:8, fontSize:13, fontWeight:500, cursor:"pointer", flex: isMobile ? "1 1 100%" : "0 0 auto" }}>
+                + Add Company
+              </button>
+            </div>
+          </div>
+
+          {/* STATS */}
+          <div style={{ display:"grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: isMobile ? 8 : 12, padding: isMobile ? "12px 14px 0" : "16px 20px 0", flexShrink:0 }}>
+            {[
+              { label:"Total Applications", value:stats.total, color:"#58a6ff", icon:"📋" },
+              { label:"Active Pipeline",    value:stats.active, color:"#10b981", icon:"🚀" },
+              { label:"With Contacts",      value:stats.contacts, color:"#8b5cf6", icon:"👤" },
+              { label:"Not Selected",       value:stats.rejected, color:"#ef4444", icon:"✕" },
+            ].map(s => (
+              <div key={s.label} style={{ background:"#161b22", borderRadius:10, padding:"14px 16px", border:"1px solid #2a3038" }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <div style={{ fontSize:26, fontWeight:700, color:s.color, letterSpacing:"-1px" }}>{s.value}</div>
+                  <div style={{ fontSize:20 }}>{s.icon}</div>
+                </div>
+                <div style={{ fontSize:11, color:"#6e7681", marginTop:3, fontWeight:500 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* FILTER BAR */}
+          <div style={{ padding: isMobile ? "12px 14px" : "12px 20px", display:"flex", gap:10, alignItems:"center", flexShrink:0, flexWrap:"wrap" }}>
+            <input type="text" placeholder="Search companies or roles..." value={search} onChange={e => setSearch(e.target.value)}
+              style={{ flex:"1 1 200px", padding:"8px 12px", border:"1px solid #2a3038", borderRadius:8, fontSize:13, background:"#161b22", color:"#e6edf3", minWidth:0 }} />
+            <select value={sortBy} onChange={e => { setSortBy(e.target.value); setSortDir(DEFAULT_DIR[e.target.value] || "asc"); }}
+              style={{ padding:"8px 12px", border:"1px solid #2a3038", borderRadius:8, fontSize:13, color:"#e6edf3", background:"#161b22", cursor:"pointer", flex: isMobile ? "1 1 auto" : "0 0 auto" }}>
+              <option value="added">Sort: Date Added</option>
+              <option value="company">Sort: Company A–Z</option>
+              <option value="status">Sort: Status</option>
+              <option value="date">Sort: Date Applied</option>
+              <option value="followup">Sort: Follow-Up Date</option>
+            </select>
+            <div style={{ display:"flex", gap:4, flexWrap:"wrap", width: isMobile ? "100%" : "auto" }}>
+              {["All", ...STATUSES].map(s => (
+                <button key={s} onClick={() => setFilter(s)}
+                  style={{ padding:"5px 10px", borderRadius:6, fontSize:11, fontWeight:500, border:"1px solid",
+                    borderColor: statusFilter === s ? "#58a6ff" : "#2a3038",
+                    background: statusFilter === s ? "#10243e" : "#161b22",
+                    color: statusFilter === s ? "#388bfd" : "#8b949e", cursor:"pointer" }}>
+                  {s === "Not Selected" ? "Rejected" : s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* MAIN CONTENT */}
+          <div style={{ padding: isMobile ? "0 14px 14px" : "0 20px 20px", display:"flex", gap:14, flex:1, minHeight:0 }}>
+
+            {/* TABLE */}
+            <div style={{ flex: (selected && !isMobile) ? "0 0 54%" : "1", background:"#161b22", borderRadius:10, border:"1px solid #2a3038", overflow:"auto", display: (selected && isMobile) ? "none" : "block" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                <thead style={{ position:"sticky", top:0, background:"#161b22", zIndex:1 }}>
+                  <tr style={{ borderBottom:"2px solid #0d1117" }}>
+                    {(isMobile
+                      ? [["Company","company"],["Status","status"],["Follow-Up","followup"]]
+                      : [["Company","company"],["Role","role"],["Status","status"],["Next Follow-Up","followup"]]
+                    ).map(([h, key]) => (
+                      <th key={h} className="sortable-th" onClick={() => applySort(key)}
+                        style={{ padding:"10px 14px", textAlign:"left", fontSize:10, fontWeight:600, color: sortBy === key ? "#b1bac4" : "#6e7681", textTransform:"uppercase", letterSpacing:"0.06em", whiteSpace:"nowrap", cursor:"pointer", userSelect:"none" }}>
+                        {h}<span style={{ marginLeft:4, fontSize:9, opacity: sortBy === key ? 1 : 0.25 }}>{sortBy === key && sortDir === "desc" ? "▼" : "▲"}</span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(c => (
+                    <tr key={c.id} className="row"
+                      onClick={() => { const opening = c.id !== selectedId; setSelectedId(c.id === selectedId ? null : c.id); setTab("log"); setAiDraft(null); setAiMetrics(null); setAiError(null); }}
+                      style={{ borderBottom:"1px solid #1c2230", background: selectedId === c.id ? "#10243e" : "#161b22", transition:"background 0.1s" }}>
+                      <td style={{ padding:"10px 14px" }}>
+                        <div style={{ fontWeight:500, fontSize:13, color:"#e6edf3" }}>{c.company}</div>
+                        {isMobile && <div style={{ fontSize:11, color:"#8b949e", marginTop:2 }}>{c.role}</div>}
+                        {c.contacts.length > 0 && (
+                          <div style={{ fontSize:11, color:"#6e7681", marginTop:2 }}>
+                            {c.contacts.length} contact{c.contacts.length > 1 ? "s" : ""}
+                          </div>
+                        )}
+                      </td>
+                      {!isMobile && <td style={{ padding:"10px 14px", fontSize:12, color:"#b1bac4", whiteSpace:"nowrap" }}>{c.role}</td>}
+                      <td style={{ padding:"10px 14px" }}><Badge status={c.status} /></td>
+                      <td style={{ padding:"10px 14px", verticalAlign:"top", maxWidth:220 }}>
+                        <div style={{ fontSize:11, color: c.followUpDate ? "#388bfd" : "#6e7681", whiteSpace:"nowrap", fontWeight: c.followUpDate ? 600 : 400 }}>
+                          {c.followUpDate ? new Date(c.followUpDate + "T12:00:00").toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" }) : "—"}
+                        </div>
+                        {c.nextFollowUp && (
+                          <div style={{ fontSize:11, color:"#6e7681", marginTop:3, lineHeight:1.4, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+                            {c.nextFollowUp}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {filtered.length === 0 && (
+                    <tr><td colSpan={isMobile ? 3 : 4} style={{ padding:"32px", textAlign:"center", color:"#6e7681", fontSize:13 }}>No results found</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* DETAIL PANEL */}
+            {selected && (
+              <div style={ isMobile
+                ? { position:"fixed", inset:0, zIndex:40, background:"#161b22", display:"flex", flexDirection:"column", overflow:"hidden" }
+                : { flex:"0 0 45%", background:"#161b22", borderRadius:10, border:"1px solid #2a3038", display:"flex", flexDirection:"column", overflow:"hidden", minHeight:0 } }>
+
+                {/* Panel header */}
+                <div style={{ padding:"14px 16px", borderBottom:"1px solid #20262e", display:"flex", alignItems:"flex-start", justifyContent:"space-between", flexShrink:0 }}>
+                  <div>
+                    <div style={{ fontWeight:700, fontSize:15, color:"#e6edf3", letterSpacing:"-0.3px" }}>{selected.company}</div>
+                    <div style={{ fontSize:12, color:"#8b949e", marginTop:2 }}>{selected.role}</div>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+                    <button onClick={openEdit}
+                      style={{ background:"#0d1117", border:"1px solid #2a3038", color:"#b1bac4", fontSize:11, fontWeight:500, padding:"4px 10px", borderRadius:6, cursor:"pointer" }}>
+                      ✏️ Edit
+                    </button>
+                    <button onClick={() => setSelectedId(null)}
+                      style={ isMobile
+                        ? { background:"#0d1117", border:"1px solid #2a3038", color:"#b1bac4", fontSize:13, fontWeight:500, padding:"4px 12px", borderRadius:6, cursor:"pointer" }
+                        : { background:"none", border:"none", color:"#6e7681", fontSize:20, cursor:"pointer", lineHeight:1, padding:"0 4px" } }>
+                      {isMobile ? "← Back" : "×"}</button>
+                  </div>
+                </div>
+
+                {/* Status row */}
+                <div style={{ padding:"10px 16px", borderBottom:"1px solid #20262e", display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
+                  <span style={{ fontSize:10, color:"#6e7681", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.05em" }}>Status</span>
+                  <select value={selected.status} onChange={e => changeStatus(selected.id, e.target.value)}
+                    style={{ fontSize:12, padding:"4px 8px", borderRadius:6, border:"1px solid #2a3038", color:"#e6edf3", cursor:"pointer", background:"#161b22" }}>
+                    {STATUSES.map(s => <option key={s}>{s}</option>)}
+                  </select>
+                  <Badge status={selected.status} />
+                </div>
+
+                {/* Info grid */}
+                <div style={{ padding:"12px 16px", borderBottom:"1px solid #20262e", display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, flexShrink:0 }}>
+                  <InfoCell label="Comp" value={selected.comp} />
+                  <InfoCell label="Location" value={selected.location} />
+                  <InfoCell label="Applied" value={selected.dateApplied ? new Date(selected.dateApplied + "T12:00:00").toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" }) : "—"} />
+                  <InfoCell label="Follow-Up Notes" value={selected.nextFollowUp} />
+                  <div style={{ gridColumn:"1 / -1" }}>
+                    <div style={{ fontSize:10, color:"#6e7681", textTransform:"uppercase", fontWeight:600, letterSpacing:"0.05em" }}>Follow-Up Date</div>
+                    <div style={{ fontSize:12, color: selected.followUpDate ? "#388bfd" : "#c9d1d9", marginTop:2, fontWeight: selected.followUpDate ? 600 : 400 }}>
+                      {selected.followUpDate ? new Date(selected.followUpDate + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric", year:"numeric" }) : "—"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI follow-up generator + live usage metrics */}
+                <div style={{ padding:"12px 16px", borderBottom:"1px solid #20262e", flexShrink:0 }}>
+                  <button onClick={() => generateFollowup(selected)} disabled={aiLoading}
+                    style={{ width:"100%", background: aiLoading ? "#fbbf24" : "#f59e0b", color:"#7c2d12", border:"none", padding:"9px 12px", borderRadius:8, fontSize:13, fontWeight:600, cursor: aiLoading ? "default" : "pointer" }}>
+                    {aiLoading ? "Thinking…" : "Generate follow-up with AI"}
+                  </button>
+                  <div style={{ textAlign:"center", marginTop:6 }}>
+                    <button onClick={() => setShowAiInfo(true)}
+                      style={{ background:"none", border:"none", color:"#6e7681", fontSize:11, cursor:"pointer", textDecoration:"underline" }}>
+                      ⓘ What's this?
+                    </button>
+                  </div>
+
+                  {aiError && (
+                    <div style={{ marginTop:10, fontSize:12, color:"#fbbf24", background:"#1f1708", border:"1px solid #3d2f10", borderRadius:8, padding:"10px 12px" }}>{aiError}</div>
+                  )}
+
+                  {aiDraft && (
+                    <div style={{ marginTop:10, fontSize:13, color:"#e6edf3", background:"#241a0c", border:"1px solid #5a3d1a", borderRadius:8, padding:"12px 14px", lineHeight:1.5, whiteSpace:"pre-wrap" }}>{aiDraft}</div>
+                  )}
+
+                  {aiMetrics && (
+                    <div style={{ marginTop:10, background:"#161b22", borderRadius:8, padding:"12px 14px", fontFamily:"'DM Mono', ui-monospace, Menlo, monospace" }}>
+                      <div style={{ fontSize:11, color:"#38bdf8", fontWeight:600, letterSpacing:"0.04em", marginBottom:6 }}>📊 LIVE AI METRICS · THIS CALL</div>
+                      <div style={{ fontSize:11, color:"#6e7681", lineHeight:1.5, marginBottom:10 }}>
+                        These are the real numbers from the call you just triggered, read straight from the model's response: tokens in and out, how long it took, and what it cost.
+                      </div>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"6px 14px", fontSize:12, color:"#c9d1d9" }}>
+                        <div><span style={{ color:"#8b949e" }}>input tokens</span> {aiMetrics.inputTokens}</div>
+                        <div><span style={{ color:"#8b949e" }}>output tokens</span> {aiMetrics.outputTokens}</div>
+                        <div><span style={{ color:"#8b949e" }}>latency</span> {(aiMetrics.latencyMs/1000).toFixed(2)}s</div>
+                        <div><span style={{ color:"#8b949e" }}>cost</span> ${aiMetrics.costUsd.toFixed(5)}</div>
+                      </div>
+                      <div style={{ fontSize:11, color:"#8b949e", marginTop:10, lineHeight:1.5 }}>
+                        Multiply that by every visitor and you see why developers watch this. This is what I'd be marketing.
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tabs */}
+                <div style={{ display:"flex", borderBottom:"1px solid #20262e", flexShrink:0 }}>
+                  {[["log", `Activity (${selected.activityLog.length})`], ["contacts", `Contacts (${selected.contacts.length})`], ["ai", `AI Drafts (${(selected.aiFollowups || []).length})`]].map(([id, label]) => (
+                    <button key={id} onClick={() => setTab(id)}
+                      style={{ flex:1, padding:"9px 8px", fontSize:12, fontWeight:500, border:"none", cursor:"pointer",
+                        background: activeTab === id ? "#10243e" : "#161b22",
+                        color: activeTab === id ? "#388bfd" : "#8b949e",
+                        borderBottom: activeTab === id ? "2px solid #58a6ff" : "2px solid transparent" }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Tab content */}
+                <div style={{ flex:1, overflowY:"auto", padding:16 }}>
+
+                  {activeTab === "log" && (
+                    <div>
+                      <div style={{ display:"flex", gap:6, marginBottom:14 }}>
+                        <input type="text" placeholder="Log an activity or note..." value={newActivity}
+                          onChange={e => setNewAct(e.target.value)} onKeyDown={e => e.key === "Enter" && addLog()}
+                          style={{ flex:1, padding:"7px 10px", border:"1px solid #2a3038", borderRadius:7, fontSize:12, color:"#e6edf3" }} />
+                        <button onClick={addLog}
+                          style={{ background:"#58a6ff", color:"white", border:"none", padding:"7px 12px", borderRadius:7, fontSize:12, cursor:"pointer", fontWeight:500, whiteSpace:"nowrap" }}>
+                          Add
+                        </button>
+                      </div>
+                      {selected.activityLog.map((log, idx) => (
+                        <div key={log.id} style={{ marginBottom:10, paddingBottom:10, borderBottom:"1px solid #1c2230" }}>
+                          {editingLogId === log.id ? (
+                            <div>
+                              <input type="date" value={editingLogDate} onChange={e => setEditingLogDate(e.target.value)}
+                                style={{ width:"100%", padding:"6px 10px", border:"1px solid #58a6ff", borderRadius:6, fontSize:12, color:"#e6edf3", marginBottom:6 }} />
+                              <textarea value={editingLogText} onChange={e => setEditingLogText(e.target.value)} rows={3}
+                                style={{ width:"100%", padding:"6px 10px", border:"1px solid #58a6ff", borderRadius:6, fontSize:12, color:"#e6edf3", resize:"none", marginBottom:6 }} />
+                              <div style={{ display:"flex", gap:6 }}>
+                                <button onClick={() => updateLog(log.id)}
+                                  style={{ flex:1, background:"#58a6ff", color:"white", border:"none", padding:"5px", borderRadius:6, fontSize:11, cursor:"pointer", fontWeight:500 }}>Save</button>
+                                <button onClick={() => { setEditingLogId(null); setEditingLogText(""); setEditingLogDate(""); }}
+                                  style={{ flex:1, background:"#0d1117", color:"#8b949e", border:"1px solid #2a3038", padding:"5px", borderRadius:6, fontSize:11, cursor:"pointer" }}>Cancel</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                              <div style={{ flex:"0 0 82px", fontSize:10, color:"#6e7681", paddingTop:2, lineHeight:1.4 }}>{log.date}</div>
+                              <div style={{ flex:1, fontSize:12, color:"#c9d1d9", lineHeight:1.5 }}>{log.entry}</div>
+                              <div style={{ display:"flex", gap:2, flexShrink:0 }}>
+                                <button onClick={() => moveLog(log.id, -1)} disabled={idx === 0}
+                                  style={{ background:"none", border:"none", color: idx === 0 ? "#2a3038" : "#6e7681", cursor: idx === 0 ? "default" : "pointer", fontSize:12, padding:"2px 4px" }} title="Move up">↑</button>
+                                <button onClick={() => moveLog(log.id, 1)} disabled={idx === selected.activityLog.length - 1}
+                                  style={{ background:"none", border:"none", color: idx === selected.activityLog.length - 1 ? "#2a3038" : "#6e7681", cursor: idx === selected.activityLog.length - 1 ? "default" : "pointer", fontSize:12, padding:"2px 4px" }} title="Move down">↓</button>
+                                <button onClick={() => { setEditingLogId(log.id); setEditingLogText(log.entry); setEditingLogDate(toISO(log.date)); }}
+                                  style={{ background:"none", border:"none", color:"#6e7681", cursor:"pointer", fontSize:11, padding:"2px 4px" }} title="Edit">✏️</button>
+                                <button onClick={() => deleteLog(log.id)}
+                                  style={{ background:"none", border:"none", color:"#7d3a3a", cursor:"pointer", fontSize:11, padding:"2px 4px" }} title="Delete">✕</button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {selected.activityLog.length === 0 && (
+                        <div style={{ textAlign:"center", color:"#6e7681", fontSize:12, padding:"20px 0" }}>No activity yet</div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === "contacts" && (
+                    <div>
+                      {selected.contacts.map(c => (
+                        editingContactId === c.id ? (
+                          <div key={c.id} style={{ marginBottom:10, padding:12, background:"#1c2230", borderRadius:8, border:"1px solid #58a6ff" }}>
+                            {[["name","Name *"], ["title","Title"], ["notes","Notes"]].map(([field, ph]) => (
+                              <input key={field} placeholder={ph} value={editContact[field]}
+                                onChange={e => setEditContact({ ...editContact, [field]: e.target.value })}
+                                style={{ width:"100%", padding:"6px 10px", border:"1px solid #2a3038", borderRadius:6, fontSize:12, marginBottom:6, color:"#e6edf3", background:"#161b22" }} />
+                            ))}
+                            <div style={{ display:"flex", gap:6 }}>
+                              <button onClick={() => updateContact(c.id)}
+                                style={{ flex:1, background:"#58a6ff", color:"white", border:"none", padding:"7px", borderRadius:6, fontSize:12, cursor:"pointer", fontWeight:500 }}>Save</button>
+                              <button onClick={() => setEditingContactId(null)}
+                                style={{ flex:1, background:"#0d1117", color:"#8b949e", border:"1px solid #2a3038", padding:"7px", borderRadius:6, fontSize:12, cursor:"pointer" }}>Cancel</button>
+                            </div>
+                          </div>
+                        ) : (
+                        <div key={c.id} style={{ marginBottom:10, padding:"10px 12px", background:"#1c2230", borderRadius:8, border:"1px solid #2a3038", position:"relative" }}>
+                          <div style={{ position:"absolute", top:8, right:8, display:"flex", gap:2 }}>
+                            <button onClick={() => startEditContact(c)}
+                              style={{ background:"none", border:"none", color:"#6e7681", cursor:"pointer", fontSize:11, padding:"0 4px" }} title="Edit contact">✏️</button>
+                            <button onClick={() => deleteContact(c.id)}
+                              style={{ background:"none", border:"none", color:"#7d3a3a", cursor:"pointer", fontSize:13, padding:"0 4px" }} title="Remove contact">✕</button>
+                          </div>
+                          <div style={{ fontWeight:600, fontSize:13, color:"#e6edf3", paddingRight:44 }}>{c.name}</div>
+                          <div style={{ fontSize:11, color:"#8b949e", marginTop:2 }}>{c.title}</div>
+                          {c.notes && <div style={{ fontSize:11, color:"#6e7681", marginTop:6, lineHeight:1.5 }}>{c.notes}</div>}
+                        </div>
+                        )
+                      ))}
+                      {selected.contacts.length === 0 && !showAddContact && (
+                        <div style={{ textAlign:"center", color:"#6e7681", fontSize:12, padding:"16px 0" }}>No contacts yet</div>
+                      )}
+                      {!showAddContact ? (
+                        <button onClick={() => setShowAC(true)}
+                          style={{ width:"100%", padding:"8px", border:"1px dashed #3a4150", borderRadius:7, fontSize:12, color:"#8b949e", background:"#161b22", cursor:"pointer", marginTop:4 }}>
+                          + Add Contact
+                        </button>
+                      ) : (
+                        <div style={{ marginTop:8, padding:12, background:"#1c2230", borderRadius:8, border:"1px solid #2a3038" }}>
+                          {[["name","Name *"], ["title","Title"], ["notes","Notes"]].map(([field, ph]) => (
+                            <input key={field} placeholder={ph} value={newContact[field]}
+                              onChange={e => setNC({ ...newContact, [field]: e.target.value })}
+                              style={{ width:"100%", padding:"6px 10px", border:"1px solid #2a3038", borderRadius:6, fontSize:12, marginBottom:6, color:"#e6edf3", background:"#161b22" }} />
+                          ))}
+                          <div style={{ display:"flex", gap:6 }}>
+                            <button onClick={addContact}
+                              style={{ flex:1, background:"#58a6ff", color:"white", border:"none", padding:"7px", borderRadius:6, fontSize:12, cursor:"pointer", fontWeight:500 }}>Save</button>
+                            <button onClick={() => { setShowAC(false); setNC({ name:"", title:"", notes:"" }); }}
+                              style={{ flex:1, background:"#0d1117", color:"#8b949e", border:"1px solid #2a3038", padding:"7px", borderRadius:6, fontSize:12, cursor:"pointer" }}>Cancel</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === "ai" && (
+                    <div>
+                      {(!selected.aiFollowups || selected.aiFollowups.length === 0) ? (
+                        <div style={{ fontSize:12, color:"#6e7681", textAlign:"center", padding:"20px 0", lineHeight:1.5 }}>
+                          No AI drafts yet.<br />Hit "Generate follow-up with AI" above and they'll be saved here.
+                        </div>
+                      ) : (
+                        selected.aiFollowups.map(d => (
+                          <div key={d.id} style={{ marginBottom:10, padding:"12px 14px", background:"#241a0c", borderRadius:8, border:"1px solid #5a3d1a" }}>
+                            <div style={{ fontSize:13, color:"#e6edf3", lineHeight:1.5, whiteSpace:"pre-wrap" }}>{d.text}</div>
+                            <div style={{ fontSize:10, color:"#fbbf24", marginTop:8, display:"flex", justifyContent:"space-between", flexWrap:"wrap", gap:6 }}>
+                              <span>To {d.addressedTo} · {new Date(d.date).toLocaleDateString("en-US", { month:"short", day:"numeric" })} {new Date(d.date).toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit" })}</span>
+                              {d.metrics && <span style={{ fontFamily:"ui-monospace, Menlo, monospace" }}>${(d.metrics.costUsd || 0).toFixed(5)} · {(d.metrics.latencyMs/1000).toFixed(2)}s</span>}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* WELCOME INTRO OVERLAY (shown once per session) */}
+          {showIntro && (
+            <div onClick={dismissIntro}
+              style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:70, padding:20 }}>
+              <div onClick={e => e.stopPropagation()}
+                style={{ background:"#161b22", borderRadius:14, padding:"28px 26px", width:"100%", maxWidth:460, boxShadow:"0 24px 70px rgba(0,0,0,0.3)", maxHeight:"85vh", overflowY:"auto" }}>
+                <div style={{ fontWeight:800, fontSize:20, marginBottom:12, color:"#e6edf3" }}>Welcome to J Fyrberg's CRM Demo</div>
+                <div style={{ fontSize:13.5, color:"#c9d1d9", lineHeight:1.6 }}>
+                  <p style={{ marginBottom:11 }}>
+                    This is a demo CRM built as a job-search tracker. Click around, it's yours. Anything you edit saves in your browser for this visit.
+                  </p>
+                  <p style={{ marginBottom:11 }}>
+                    The fun part: open any company and hit <strong>"Generate follow-up with AI."</strong> Claude writes a brief, professional follow-up note to the contact, and the dark panel shows the real tokens, latency, and cost of that call.
+                  </p>
+                  <p style={{ color:"#8b949e", fontSize:12.5 }}>
+                    Built by Jason Fyrberg with Claude, as a demo of what fits in a single HTML file. The companies and contacts are fictional.
+                  </p>
+                </div>
+                <button onClick={dismissIntro}
+                  style={{ marginTop:18, width:"100%", background:"#f59e0b", color:"#7c2d12", border:"none", padding:"11px", borderRadius:9, fontSize:14, fontWeight:700, cursor:"pointer" }}>Get started</button>
+              </div>
+            </div>
+          )}
+
+          {/* AI INFO OVERLAY */}
+          {showAiInfo && (
+            <div onClick={() => setShowAiInfo(false)}
+              style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:60, padding:20 }}>
+              <div onClick={e => e.stopPropagation()}
+                style={{ background:"#161b22", borderRadius:12, padding:24, width:"100%", maxWidth:440, boxShadow:"0 20px 60px rgba(0,0,0,0.25)", maxHeight:"85vh", overflowY:"auto" }}>
+                <div style={{ fontWeight:700, fontSize:16, marginBottom:12, color:"#e6edf3" }}>About the AI follow-up button</div>
+                <div style={{ fontSize:13, color:"#c9d1d9", lineHeight:1.6 }}>
+                  <p style={{ marginBottom:10 }}>
+                    Click <strong>Generate follow-up with AI</strong> and Claude writes a brief, professional follow-up note to this company's first contact, using the pipeline status and your activity notes as background.
+                  </p>
+                  <p style={{ marginBottom:10 }}>
+                    The dark panel shows the real tokens, latency, and cost of the call you just made, read straight from the model's response.
+                  </p>
+                  <p style={{ marginBottom:10 }}>
+                    Each note is saved to the <strong>AI Drafts</strong> tab for this company, so you can compare them. The AI never reads that tab, it only sees your activity notes and contact, so it won't recycle its own old drafts.
+                  </p>
+                  <p style={{ color:"#8b949e", fontSize:12 }}>
+                    This is a demo. The companies and contacts are fictional. Built by Jason Fyrberg with Claude.
+                  </p>
+                </div>
+                <button onClick={() => setShowAiInfo(false)}
+                  style={{ marginTop:16, width:"100%", background:"#f59e0b", color:"#7c2d12", border:"none", padding:"9px", borderRadius:8, fontSize:13, fontWeight:600, cursor:"pointer" }}>Got it</button>
+              </div>
+            </div>
+          )}
+
+          {/* ADD COMPANY MODAL */}
+          {showAddCo && (
+            <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:50, padding:20 }}>
+              <div style={{ background:"#161b22", borderRadius:12, padding:24, width:"100%", maxWidth:380, boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
+                <div style={{ fontWeight:700, fontSize:15, marginBottom:16, color:"#e6edf3" }}>Add to Pipeline</div>
+                {[["company","Company Name *"], ["role","Role *"], ["comp","Compensation"], ["location","Location"], ["nextFollowUp","Follow-Up Notes"]].map(([field, ph]) => (
+                  <input key={field} placeholder={ph} value={newCo[field]}
+                    onChange={e => setNewCoData({ ...newCo, [field]: e.target.value })}
+                    style={{ width:"100%", padding:"8px 12px", border:"1px solid #2a3038", borderRadius:8, fontSize:13, marginBottom:8, color:"#e6edf3", background:"#161b22" }} />
+                ))}
+                <div style={{ marginBottom:8 }}>
+                  <div style={{ fontSize:11, color:"#6e7681", marginBottom:4, fontWeight:500 }}>Follow-Up Date</div>
+                  <input type="date" value={newCo.followUpDate || ""}
+                    onChange={e => setNewCoData({ ...newCo, followUpDate: e.target.value })}
+                    style={{ width:"100%", padding:"8px 12px", border:"1px solid #2a3038", borderRadius:8, fontSize:13, color:"#e6edf3", background:"#161b22" }} />
+                </div>
+                <select value={newCo.status} onChange={e => setNewCoData({ ...newCo, status: e.target.value })}
+                  style={{ width:"100%", padding:"8px 12px", border:"1px solid #2a3038", borderRadius:8, fontSize:13, color:"#e6edf3", background:"#161b22", marginBottom:14 }}>
+                  {STATUSES.map(s => <option key={s}>{s}</option>)}
+                </select>
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={addCompany}
+                    style={{ flex:1, background:"#58a6ff", color:"white", border:"none", padding:"9px", borderRadius:8, fontSize:13, cursor:"pointer", fontWeight:500 }}>
+                    Add to Pipeline
+                  </button>
+                  <button onClick={() => setShowCo(false)}
+                    style={{ flex:1, background:"#0d1117", color:"#8b949e", border:"1px solid #2a3038", padding:"9px", borderRadius:8, fontSize:13, cursor:"pointer" }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* EDIT COMPANY MODAL */}
+          {showEditCo && editData && (
+            <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:50, padding:20 }}>
+              <div style={{ background:"#161b22", borderRadius:12, padding:24, width:"100%", maxWidth:400, boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
+                <div style={{ fontWeight:700, fontSize:15, marginBottom:16, color:"#e6edf3" }}>Edit Company</div>
+                {[
+                  ["company","Company Name"],
+                  ["role","Role"],
+                  ["comp","Compensation"],
+                  ["location","Location"],
+                ].map(([field, ph]) => (
+                  <div key={field} style={{ marginBottom:8 }}>
+                    <div style={{ fontSize:11, color:"#6e7681", marginBottom:4, fontWeight:500 }}>{ph}</div>
+                    <input placeholder={ph} value={editData[field]}
+                      onChange={e => setEditData({ ...editData, [field]: e.target.value })}
+                      style={{ width:"100%", padding:"8px 12px", border:"1px solid #2a3038", borderRadius:8, fontSize:13, color:"#e6edf3", background:"#161b22" }} />
+                  </div>
+                ))}
+                <div style={{ marginBottom:8 }}>
+                  <div style={{ fontSize:11, color:"#6e7681", marginBottom:4, fontWeight:500 }}>Date Applied</div>
+                  <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                    <input type="date" value={editData.dateApplied || ""}
+                      onChange={e => setEditData({ ...editData, dateApplied: e.target.value })}
+                      style={{ flex:1, padding:"8px 12px", border:"1px solid #2a3038", borderRadius:8, fontSize:13, color:"#e6edf3", background:"#161b22" }} />
+                    {editData.dateApplied &&
+                      <button onClick={() => setEditData({ ...editData, dateApplied: "" })}
+                        title="Clear date"
+                        style={{ flex:"0 0 auto", padding:"8px 12px", border:"1px solid #2a3038", borderRadius:8, fontSize:13, color:"#6e7681", background:"#1c2230", cursor:"pointer", lineHeight:1 }}>
+                        ✕
+                      </button>}
+                  </div>
+                </div>
+                <div style={{ marginBottom:8 }}>
+                  <div style={{ fontSize:11, color:"#6e7681", marginBottom:4, fontWeight:500 }}>Follow-Up Notes</div>
+                  <textarea placeholder="Next Follow-Up Notes" value={editData.nextFollowUp}
+                    onChange={e => setEditData({ ...editData, nextFollowUp: e.target.value })}
+                    rows={2}
+                    style={{ width:"100%", padding:"8px 12px", border:"1px solid #2a3038", borderRadius:8, fontSize:13, color:"#e6edf3", background:"#161b22", resize:"none" }} />
+                </div>
+                <div style={{ marginBottom:8 }}>
+                  <div style={{ fontSize:11, color:"#6e7681", marginBottom:4, fontWeight:500 }}>Follow-Up Date</div>
+                  <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                    <input type="date" value={editData.followUpDate || ""}
+                      onChange={e => setEditData({ ...editData, followUpDate: e.target.value })}
+                      style={{ flex:1, padding:"8px 12px", border:"1px solid #2a3038", borderRadius:8, fontSize:13, color:"#e6edf3", background:"#161b22" }} />
+                    {editData.followUpDate &&
+                      <button onClick={() => setEditData({ ...editData, followUpDate: "" })}
+                        title="Clear date"
+                        style={{ flex:"0 0 auto", padding:"8px 12px", border:"1px solid #2a3038", borderRadius:8, fontSize:13, color:"#6e7681", background:"#1c2230", cursor:"pointer", lineHeight:1 }}>
+                        ✕
+                      </button>}
+                  </div>
+                </div>
+                <div style={{ marginBottom:14 }}>
+                  <div style={{ fontSize:11, color:"#6e7681", marginBottom:4, fontWeight:500 }}>Status</div>
+                  <select value={editData.status} onChange={e => setEditData({ ...editData, status: e.target.value })}
+                    style={{ width:"100%", padding:"8px 12px", border:"1px solid #2a3038", borderRadius:8, fontSize:13, color:"#e6edf3", background:"#161b22" }}>
+                    {STATUSES.map(s => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={saveEdit}
+                    style={{ flex:1, background:"#58a6ff", color:"white", border:"none", padding:"9px", borderRadius:8, fontSize:13, cursor:"pointer", fontWeight:500 }}>
+                    Save Changes
+                  </button>
+                  <button onClick={() => { setShowEditCo(false); setEditData(null); }}
+                    style={{ flex:1, background:"#0d1117", color:"#8b949e", border:"1px solid #2a3038", padding:"9px", borderRadius:8, fontSize:13, cursor:"pointer" }}>
+                    Cancel
+                  </button>
+                </div>
+                <button onClick={deleteCompany}
+                  style={{ width:"100%", marginTop:8, background:"none", border:"1px solid #5c2626", color:"#ef4444", padding:"8px", borderRadius:8, fontSize:12, cursor:"pointer" }}>
+                  Remove from Pipeline
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* FOOTER CREDIT */}
+          <div style={{ background:"#161b22", color:"#6e7681", padding:"14px 20px", fontSize:12, textAlign:"center", flexShrink:0, lineHeight:1.7 }}>
+            <div style={{ color:"#8b949e", fontWeight:500 }}>Created by Jason Fyrberg · Built with Claude AI</div>
+            <div>
+              <a href="mailto:JasonFyrberg@gmail.com" style={{ color:"#79c0ff", textDecoration:"none" }}>JasonFyrberg@gmail.com</a>
+              {"  ·  "}
+              <a href="https://www.linkedin.com/in/jfyrberg" target="_blank" rel="noopener noreferrer" style={{ color:"#79c0ff", textDecoration:"none" }}>linkedin.com/in/jfyrberg</a>
+            </div>
+            <div style={{ marginTop:6, fontSize:11, color:"#8b949e" }}>This is a demo with fictional data. Your changes save only in your browser.</div>
+          </div>
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>

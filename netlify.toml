@@ -1,0 +1,4 @@
+# Netlify configuration for J Fyrberg's CRM Demo
+[build]
+  publish = "."
+  functions = "netlify/functions"
