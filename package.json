@@ -1,9 +1,11 @@
 {
   "name": "jfyrberg-crm-demo-ai",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
-  "description": "Server-side AI follow-up function for J Fyrberg's CRM Demo (direct Anthropic call, no analytics).",
+  "description": "Server-side AI follow-up function for J Fyrberg's CRM Demo, with PostHog product analytics and AI observability.",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.78.0"
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@posthog/ai": "^8.2.1",
+    "posthog-node": "^5.38.2"
   }
 }
