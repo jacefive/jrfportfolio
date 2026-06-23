@@ -242,7 +242,7 @@
               setSelectedId(null);
               alert(`Restored ${data.length} companies successfully.`);
             } else {
-              alert("Invalid backup file — expected an array of companies.");
+              alert("Invalid backup file, expected an array of companies.");
             }
           } catch {
             alert("Could not read file. Make sure it's a valid CRM backup.");
@@ -509,6 +509,10 @@
           {/* HEADER */}
           <div style={{ background:"#161b22", color:"white", padding: isMobile ? "12px 14px" : "12px 20px", display:"flex", alignItems: isMobile ? "stretch" : "center", justifyContent:"space-between", flexShrink:0, flexDirection: isMobile ? "column" : "row", gap: isMobile ? 10 : 0 }}>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <a href="index.html" title="Back to the home screen"
+                style={{ display:"inline-flex", alignItems:"center", gap:6, background:"#21262d", color:"#c9d1d9", border:"1px solid #30363d", padding:"7px 12px", borderRadius:8, fontSize:13, fontWeight:500, textDecoration:"none", whiteSpace:"nowrap", flexShrink:0 }}>
+                ← Home
+              </a>
               <img src={HEADER_IMG} alt="J Fyrberg's CRM demo" style={{ height:42, width:"auto", borderRadius:6, flexShrink:0 }} />
               <div>
                 <div style={{ fontSize:15, fontWeight:600, letterSpacing:"-0.3px" }}>J Fyrberg's CRM Demo</div>
