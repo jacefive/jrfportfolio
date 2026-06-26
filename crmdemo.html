@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#161b22" />
   <script src="/posthog.js"></script>
   <title>J Fyrberg's CRM Demo</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDY0IDY0Ij4KICA8cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxMSIgZmlsbD0iIzAzMTAwYSIvPgogIDxwYXRoIGQ9Ik05IDggSDQzIEw1NiAyMSBWNTYgSDkgWiIgZmlsbD0iIzA4MjIwZiIgc3Ryb2tlPSIjNGRmZjdhIiBzdHJva2Utd2lkdGg9IjIuNiIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxyZWN0IHg9IjI5IiB5PSIxMSIgd2lkdGg9IjE1IiBoZWlnaHQ9IjExIiBmaWxsPSIjMDMxMDBhIiBzdHJva2U9IiM0ZGZmN2EiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPHJlY3QgeD0iMzgiIHk9IjEzIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiBmaWxsPSIjMGMzYTFlIiBzdHJva2U9IiM0ZGZmN2EiIHN0cm9rZS13aWR0aD0iMC44Ii8+CiAgPHJlY3QgeD0iMTUiIHk9IjI5IiB3aWR0aD0iMzQiIGhlaWdodD0iMjEiIHJ4PSIxLjUiIGZpbGw9IiMwYzNhMWUiIHN0cm9rZT0iIzFmOGM0MyIgc3Ryb2tlLXdpZHRoPSIxLjYiLz4KICA8dGV4dCB4PSIzMiIgeT0iNDUiIGZvbnQtZmFtaWx5PSJ1aS1tb25vc3BhY2UsJ0RlamFWdSBTYW5zIE1vbm8nLG1vbm9zcGFjZSIgZm9udC1zaXplPSIxNyIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iI2I5ZmZjYiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SkY8L3RleHQ+Cjwvc3ZnPgo=" />
@@ -25,16 +26,18 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'DM Sans', sans-serif; }
     body { background: #0d1117; }
+    html { background: #0d1117; scrollbar-width: thin; scrollbar-color: #3a4150 #0d1117; }
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-thumb { background: #3a4150; border-radius: 4px; }
     .row:hover { background: #1c2230 !important; cursor: pointer; }
     .sortable-th:hover { color: #b1bac4 !important; background: #1c2230; }
     input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
-    input, textarea, select { color: #e6edf3; }
+    input, textarea, select { color: #e6edf3; background: #161b22; }
     input::placeholder, textarea::placeholder { color: #6e7681; }
     select option { background: #161b22; color: #e6edf3; }
     input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.8); }
     input:focus, textarea:focus, select:focus { outline: 2px solid #58a6ff; outline-offset: 1px; }
+    .os-home:hover { border-color:#4dff7a !important; color:#b9ffcb !important; box-shadow:0 0 10px rgba(77,255,122,0.35); }
   </style>
 </head>
 <body>
@@ -57,43 +60,139 @@
 
     const INITIAL_COMPANIES = [
       {
-        id:"1", company:"Demo Company 1", role:"Sales Development Representative", category:"SDR/BDR",
-        status:"Interviewing", dateApplied:"2026-06-08", comp:"$70k base + commission", location:"Remote",
-        nextFollowUp:"Send a thank-you note after the second-round interview.", followUpDate:"2026-07-02",
+        id:"1", company:"Sterling Cooper", role:"Account Executive", category:"Sales",
+        status:"Offer", dateApplied:"2026-06-05", comp:"$95k base + new business commission", location:"New York, NY (in office)",
+        nextFollowUp:"Respond to the offer by Friday. Send Roger a gracious handwritten note first.", followUpDate:"2026-07-01",
         contacts:[
-          { id:"c1", name:"Alex Morgan", title:"VP of Sales", notes:"Direct and to the point. Cares about pipeline discipline." },
-          { id:"c2", name:"Jordan Lee", title:"Sales Manager", notes:"Ran the first interview. Friendly, asked a lot about outbound process." },
+          { id:"c1", name:"Roger Sterling", title:"Senior Partner", notes:"Charming, day-drinks, decides on instinct. Win him over and the rest follows." },
+          { id:"c2", name:"Don Draper", title:"Creative Director", notes:"Hard to read. If he likes the pitch, the partners fall in line." },
+          { id:"c3", name:"Pete Campbell", title:"Account Manager", notes:"Ambitious and territorial. Friendly in a way that feels like a warning. Keep close." },
+          { id:"c4", name:"Joan Holloway", title:"Office Manager", notes:"Runs the place and knows everything. Be respectful and doors open." },
         ],
         activityLog:[
-          { id:"l1", date:"Jun 8 2026", entry:"Applied through the company careers page." },
-          { id:"l2", date:"Jun 15 2026", entry:"First-round phone screen with Jordan. Went well." },
-          { id:"l3", date:"Jun 20 2026", entry:"Second-round interview scheduled for next week." },
+          { id:"l1", date:"Jun 22 2026", entry:"Second interview over a long lunch. Roger told a story, then offered a cigarette and the job, in that order." },
+          { id:"l2", date:"Jun 18 2026", entry:"Met Pete Campbell. Pleasant on the surface, sizing me up underneath." },
+          { id:"l3", date:"Jun 12 2026", entry:"Phone screen with Joan. Direct and sharp, had me figured out in four minutes." },
+          { id:"l4", date:"Jun 5 2026", entry:"Applied through a referral. Hand-delivered the resume to the Madison Ave office." },
         ],
       },
       {
-        id:"2", company:"Demo Company 2", role:"Account Executive", category:"Sales",
-        status:"Applied", dateApplied:"2026-06-12", comp:"$90k base, $180k OTE", location:"Hybrid",
-        nextFollowUp:"Follow up if there is no response by the end of the week.", followUpDate:"2026-06-27",
+        id:"2", company:"Lumon Industries", role:"Macrodata Refinement", category:"Operations",
+        status:"On Hold", dateApplied:"2026-05-28", comp:"Withheld pending severance consent. Perks include finger traps and waffle parties.", location:"Kier, PE (severed floor, no windows)",
+        nextFollowUp:"Follow up once the floor situation settles. Confirm the role is still severed.", followUpDate:"2026-07-08",
         contacts:[
-          { id:"c3", name:"Taylor Brooks", title:"Head of Talent", notes:"Recruiter contact. Responsive over email." },
-          { id:"c4", name:"Sam Rivera", title:"Director of Sales", notes:"Hiring manager for the role." },
-          { id:"c5", name:"Casey Nguyen", title:"Senior Account Executive", notes:"Would be a peer on the team. Connected on LinkedIn." },
+          { id:"c5", name:"Mr. Milchick", title:"Floor Manager", notes:"All teeth and enthusiasm. Recently promoted. Big on morale, bigger on compliance." },
+          { id:"c6", name:"Ms. Cobel", title:"Former Manager", notes:"Intense. No longer officially with Lumon, yet somehow still everywhere." },
+          { id:"c7", name:"Mark S.", title:"Refiner", notes:"Would be a peer. Seems to be going through something. Kept mentioning a Cold Harbor file." },
         ],
         activityLog:[
-          { id:"l4", date:"Jun 12 2026", entry:"Submitted application with a tailored resume." },
-          { id:"l5", date:"Jun 13 2026", entry:"Recruiter confirmed receipt and said they would review this week." },
+          { id:"l5", date:"Jun 20 2026", entry:"Severed floor reportedly in open revolt. Status of the role unclear. Mark S. unreachable." },
+          { id:"l6", date:"Jun 14 2026", entry:"Sat through a wellness session. Was told facts about my outie that I cannot confirm." },
+          { id:"l7", date:"Jun 6 2026", entry:"Toured Macrodata Refinement. The numbers are scary. Nobody will say why." },
+          { id:"l8", date:"May 28 2026", entry:"Signed the severance consent forms. The elevator does something I do not fully understand." },
         ],
       },
       {
-        id:"3", company:"Demo Company 3", role:"Business Development Representative", category:"SDR/BDR",
-        status:"Prospecting", dateApplied:"", comp:"To be discussed", location:"Remote",
-        nextFollowUp:"Ask a contact for a warm intro before applying.", followUpDate:"2026-06-30",
+        id:"3", company:"Vandelay Industries", role:"Latex Salesman", category:"Sales",
+        status:"Prospecting", dateApplied:"", comp:"Unclear. The company may not technically exist.", location:"Manhattan, NY (allegedly)",
+        nextFollowUp:"Confirm this is a real company before the unemployment office calls. Make sure someone answers as Vandelay Industries.", followUpDate:"2026-06-29",
         contacts:[
-          { id:"c6", name:"Riley Carter", title:"Sales Operations Lead", notes:"Met at a virtual event. Open to a quick chat." },
-          { id:"c7", name:"Morgan Patel", title:"Recruiter", notes:"Posted the role. Have not reached out yet." },
+          { id:"c8", name:"Art Vandelay", title:"Importer / Exporter", notes:"Founder, possibly imaginary. Impossible to reach. May in fact be a man named George." },
+          { id:"c9", name:"Cosmo K.", title:"Front Desk", notes:"Answers the phone 'Vandelay Industries' when it rings, then hangs up mid-sentence." },
         ],
         activityLog:[
-          { id:"l6", date:"Jun 18 2026", entry:"Found the role through a referral. Researching the team before applying." },
+          { id:"l9", date:"Jun 24 2026", entry:"Listed Vandelay on the unemployment paperwork. Now it has to hold up under questions." },
+          { id:"l10", date:"Jun 20 2026", entry:"Called the main line. Someone answered 'Vandelay Industries' and immediately hung up." },
+          { id:"l11", date:"Jun 15 2026", entry:"They do importing. And exporting. Of what, nobody will say." },
+        ],
+      },
+      {
+        id:"4", company:"Initech", role:"Software Consultant", category:"Other",
+        status:"Not Selected", dateApplied:"2026-04-30", comp:"$52k. They will also need you to come in on Saturday.", location:"Office park, generic suburb (cubicle)",
+        nextFollowUp:"Did you get the memo about the new TPS cover sheets? Probably not worth following up.", followUpDate:"",
+        contacts:[
+          { id:"c10", name:"Bill Lumbergh", title:"VP", notes:"Leans on your cubicle wall. Speaks entirely in soft requests that are not requests." },
+          { id:"c11", name:"The Bobs", title:"Efficiency Consultants", notes:"Two men named Bob. They will ask what you would say you do here. Answer carefully." },
+          { id:"c12", name:"Milton W.", title:"Collator", notes:"Quiet. Loves his red stapler. Do not move his desk. Do not take the stapler." },
+        ],
+        activityLog:[
+          { id:"l12", date:"Jun 2 2026", entry:"Met with the Bobs. They asked what I do here. I am still not sure I answered correctly." },
+          { id:"l13", date:"May 20 2026", entry:"Lumbergh swung by the cube to mention the TPS reports have a new cover sheet." },
+          { id:"l14", date:"Apr 30 2026", entry:"Applied. Was warned there might be a case of the Mondays." },
+        ],
+      },
+      {
+        id:"5", company:"Dunder Mifflin", role:"Sales Representative", category:"Sales",
+        status:"Offer", dateApplied:"2026-05-15", comp:"$45k base + paper commission. Includes a yearly Dundie award.", location:"Scranton, PA (Scranton Business Park)",
+        nextFollowUp:"Accept before they throw a party about it. Avoid the conference room if Michael is hosting.", followUpDate:"2026-06-30",
+        contacts:[
+          { id:"c13", name:"Michael Scott", title:"Regional Manager", notes:"Wants to be your friend first and your boss fifth. The offer is real, the process will be chaos." },
+          { id:"c14", name:"Dwight Schrute", title:"Assistant to the Regional Manager", notes:"Beet farmer and top salesman. Takes the title very seriously. Do not shorten it." },
+          { id:"c15", name:"Jim Halpert", title:"Sales", notes:"Dry sense of humor. Will help you out if you can take a prank or two." },
+          { id:"c16", name:"Pam Beesly", title:"Reception", notes:"Knows everyone and everything. Be kind and the whole office opens up." },
+        ],
+        activityLog:[
+          { id:"l15", date:"Jun 23 2026", entry:"Verbal offer extended during a surprise conference room meeting. There was a slideshow." },
+          { id:"l16", date:"Jun 19 2026", entry:"Final interview with Michael ran two hours. Roughly twenty minutes were about the job." },
+          { id:"l17", date:"Jun 10 2026", entry:"Dwight quizzed me on paper facts and beet cultivation. I believe I passed." },
+          { id:"l18", date:"May 15 2026", entry:"Applied online. Got a same-day reply with three exclamation points." },
+        ],
+      },
+      {
+        id:"6", company:"Pied Piper", role:"Head of Sales (First Sales Hire)", category:"Sales",
+        status:"Applied", dateApplied:"2026-06-16", comp:"$80k base, heavy on equity. Equity value pending the next pivot.", location:"Palo Alto, CA (a house that is also the office)",
+        nextFollowUp:"Follow up after their next funding round, or pivot, whichever lands first.", followUpDate:"2026-07-03",
+        contacts:[
+          { id:"c17", name:"Richard Hendricks", title:"CEO and Founder", notes:"Brilliant, anxious, prone to rants about middle-out compression. Means very well." },
+          { id:"c18", name:"Erlich Bachman", title:"Incubator", notes:"Loud. Takes credit for everything. Lives in the house, sorry, the incubator." },
+          { id:"c19", name:"Jared Dunn", title:"Head of Operations", notes:"Unsettlingly devoted and quietly the only adult in the building." },
+        ],
+        activityLog:[
+          { id:"l19", date:"Jun 22 2026", entry:"Saw the demo. The compression score is genuinely incredible. The business model is genuinely unclear." },
+          { id:"l20", date:"Jun 18 2026", entry:"Erlich talked for forty minutes. I learned nothing about the role and a great deal about Erlich." },
+          { id:"l21", date:"Jun 16 2026", entry:"Applied after a warm intro. Pre-revenue but post-hype." },
+        ],
+      },
+      {
+        id:"7", company:"Cyberdyne Systems", role:"AI Solutions Engineer", category:"Other",
+        status:"Interviewing", dateApplied:"2026-06-09", comp:"$140k. Options vest assuming the future still happens.", location:"Sunnyvale, CA",
+        nextFollowUp:"Ask hard questions about the neural-net project before accepting. Mainly: what is it for.", followUpDate:"2026-07-05",
+        contacts:[
+          { id:"c20", name:"Miles Dyson", title:"Director of Special Projects", notes:"Lead on the neural-net processor. Earnest. Does not appear to know what he is building." },
+          { id:"c21", name:"Cyberdyne Recruiter", title:"Talent", notes:"Very excited about a revolutionary defense network. Would not say its name." },
+        ],
+        activityLog:[
+          { id:"l22", date:"Jun 21 2026", entry:"Technical round on the neural-net processor. Impressive work. Slightly terrifying implications." },
+          { id:"l23", date:"Jun 14 2026", entry:"Recruiter described a fully autonomous defense network going live soon. I asked the name. They smiled." },
+          { id:"l24", date:"Jun 9 2026", entry:"Applied. The job builds the future. That is either a perk or a warning." },
+        ],
+      },
+      {
+        id:"8", company:"Globex Corporation", role:"VP of Sales, East Coast", category:"Sales",
+        status:"Offer", dateApplied:"2026-06-11", comp:"Generous. Comes with a house, a hammock, and possibly the Denver Broncos.", location:"Cypress Creek (campus with a smoothie bar)",
+        nextFollowUp:"Accept before Scorpio takes over the East Coast. He really wants you to feel at home.", followUpDate:"2026-06-28",
+        contacts:[
+          { id:"c22", name:"Hank Scorpio", title:"CEO", notes:"The best boss you will ever have. Relaxed, generous, possibly a supervillain. Do not overthink the doomsday device." },
+          { id:"c23", name:"Globex HR", title:"People Ops", notes:"Onboarding includes a hammock district and unlimited smoothies. No notes." },
+        ],
+        activityLog:[
+          { id:"l25", date:"Jun 24 2026", entry:"Scorpio offered me a job, a house, and a hammock in one sentence and asked for nothing back. Suspicious. Wonderful." },
+          { id:"l26", date:"Jun 17 2026", entry:"Campus tour. No walls, a smoothie bar, a man in a jumpsuit running very fast. Morale extremely high." },
+          { id:"l27", date:"Jun 11 2026", entry:"Applied. Recruiter said Globex is taking over the world of business. Assumed that was a figure of speech." },
+        ],
+      },
+      {
+        id:"9", company:"Los Pollos Hermanos", role:"Regional Operations Manager", category:"Operations",
+        status:"Withdrew", dateApplied:"2026-05-22", comp:"$85k. The books are spotless. Suspiciously spotless.", location:"Albuquerque, NM (plus an industrial laundry, for some reason)",
+        nextFollowUp:"Withdrew. Do not follow up. Do not ask about the basement under the laundry.", followUpDate:"",
+        contacts:[
+          { id:"c24", name:"Gustavo Fring", title:"Owner", notes:"Impeccable, polite, terrifyingly precise. Runs the cleanest operation you have ever seen. Maybe too clean." },
+          { id:"c25", name:"Mike E.", title:"Security and Logistics", notes:"Calm and thorough. Handles problems. Asks no questions and answers fewer." },
+        ],
+        activityLog:[
+          { id:"l28", date:"Jun 4 2026", entry:"Withdrew my application. The chicken is excellent. The energy in the back is not." },
+          { id:"l29", date:"May 30 2026", entry:"Toured the distribution center. Why does a chicken chain need an industrial laundry?" },
+          { id:"l30", date:"May 22 2026", entry:"Applied. Glowing reviews. Owner described as a pillar of the community." },
         ],
       },
     ];
@@ -513,9 +612,9 @@
           {/* HEADER */}
           <div style={{ background:"#161b22", color:"white", padding: isMobile ? "12px 14px" : "12px 20px", display:"flex", alignItems: isMobile ? "stretch" : "center", justifyContent:"space-between", flexShrink:0, flexDirection: isMobile ? "column" : "row", gap: isMobile ? 10 : 0 }}>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-              <a href="index.html" title="Back to the home screen"
-                style={{ display:"inline-flex", alignItems:"center", gap:6, background:"#21262d", color:"#c9d1d9", border:"1px solid #30363d", padding:"7px 12px", borderRadius:8, fontSize:13, fontWeight:500, textDecoration:"none", whiteSpace:"nowrap", flexShrink:0 }}>
-                ← Home
+              <a href="index.html" title="Back to the home screen" className="os-home"
+                style={{ display:"inline-flex", alignItems:"center", gap:6, background:"#03100a", color:"#4dff7a", border:"1px solid #1f8c43", padding:"7px 12px", borderRadius:8, fontSize:13, fontWeight:600, fontFamily:"ui-monospace, 'DejaVu Sans Mono', Menlo, monospace", letterSpacing:"0.5px", textShadow:"0 0 4px rgba(77,255,122,0.55)", textDecoration:"none", whiteSpace:"nowrap", flexShrink:0 }}>
+                {"A:\\ HOME"}
               </a>
               <img src={HEADER_IMG} alt="J Fyrberg's CRM demo" style={{ height:42, width:"auto", borderRadius:6, flexShrink:0 }} />
               <div>

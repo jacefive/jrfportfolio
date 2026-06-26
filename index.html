@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#03100a" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDY0IDY0Ij4KICA8cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxMSIgZmlsbD0iIzAzMTAwYSIvPgogIDxwYXRoIGQ9Ik05IDggSDQzIEw1NiAyMSBWNTYgSDkgWiIgZmlsbD0iIzA4MjIwZiIgc3Ryb2tlPSIjNGRmZjdhIiBzdHJva2Utd2lkdGg9IjIuNiIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDxyZWN0IHg9IjI5IiB5PSIxMSIgd2lkdGg9IjE1IiBoZWlnaHQ9IjExIiBmaWxsPSIjMDMxMDBhIiBzdHJva2U9IiM0ZGZmN2EiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPHJlY3QgeD0iMzgiIHk9IjEzIiB3aWR0aD0iNCIgaGVpZ2h0PSI3IiBmaWxsPSIjMGMzYTFlIiBzdHJva2U9IiM0ZGZmN2EiIHN0cm9rZS13aWR0aD0iMC44Ii8+CiAgPHJlY3QgeD0iMTUiIHk9IjI5IiB3aWR0aD0iMzQiIGhlaWdodD0iMjEiIHJ4PSIxLjUiIGZpbGw9IiMwYzNhMWUiIHN0cm9rZT0iIzFmOGM0MyIgc3Ryb2tlLXdpZHRoPSIxLjYiLz4KICA8dGV4dCB4PSIzMiIgeT0iNDUiIGZvbnQtZmFtaWx5PSJ1aS1tb25vc3BhY2UsJ0RlamFWdSBTYW5zIE1vbm8nLG1vbm9zcGFjZSIgZm9udC1zaXplPSIxNyIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iI2I5ZmZjYiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SkY8L3RleHQ+Cjwvc3ZnPgo=" />
   <script src="/posthog.js"></script>
   <title>Jason Fyrberg: Portfolio</title>
@@ -32,6 +33,14 @@
     }
     * { box-sizing:border-box; margin:0; padding:0; }
     html,body{ height:100%; }
+    html{ background:#010904; }
+    /* themed scrollbars so the default white bar doesn't show */
+    html{ scrollbar-width: thin; scrollbar-color: #1f8c43 #06190f; }
+    ::-webkit-scrollbar{ width:10px; height:10px; }
+    ::-webkit-scrollbar-track{ background:#06190f; }
+    ::-webkit-scrollbar-thumb{ background:#1f8c43; border-radius:6px; }
+    ::-webkit-scrollbar-thumb:hover{ background:#4dff7a; }
+    ::-webkit-scrollbar-corner{ background:#06190f; }
     body{
       background:
         radial-gradient(120% 120% at 50% 50%, var(--bg-2) 0%, var(--bg) 60%, #010904 100%);
@@ -240,7 +249,11 @@
       font-size:28px; color:var(--g-bright);
       text-shadow:0 0 8px rgba(185,255,203,0.6); letter-spacing:0.5px;
     }
-    .about-body .abt-dim{ font-size:16px; color:var(--g-dim); }
+    .about-body .abt-dim{ font-size:18px; color:#31ba59; }
+    .about-portrait{
+      display:block; width:190px; height:auto; margin:2px auto 16px;
+      filter:drop-shadow(0 0 10px rgba(77,255,122,0.35));
+    }
     .about-foot{
       display:flex; justify-content:space-between; align-items:center; gap:12px;
       border-top:1px solid var(--g-faint); padding:12px 16px;
@@ -376,6 +389,7 @@
         <button class="about-x" id="aboutClose" aria-label="Close and return to home screen">[ X ]</button>
       </div>
       <div class="about-body">
+        <img class="about-portrait" src="jrf_portrait.png" alt="Jason Fyrberg, rendered in green CRT terminal style" width="520" height="715" loading="lazy" />
         <!-- ====== EDIT YOUR BIO BELOW. This block is the only part to change. ====== -->
         <p>&gt; LOADING PROFILE...</p>
         <p class="abt-name">JASON FYRBERG</p>
