@@ -16,4 +16,5 @@
 posthog.init('phc_oQ6zjb74XNrsTdjSwLNQf3GL8xj3StTdXdrUeZoiq8Jv', {
     api_host: 'https://us.i.posthog.com',
     defaults: '2026-01-30',
+    person_profiles: 'always',
 });
