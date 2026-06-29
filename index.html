@@ -353,7 +353,7 @@
     @media (max-width:560px){ .db-shot img{ width:200px; margin:0 auto; } .db-title{ font-size:46px; } .db-body{ gap:16px; } }
     @media (prefers-reduced-motion:reduce){ .db-screen{ animation:none; } }
 
-    /* ===== Playable DOS terminal (test_index, v1.4) ===== */
+    /* ===== Playable DOS terminal (test_index, v1.5) ===== */
     #drive{ cursor:text; }
     .aline{ display:flex; align-items:baseline; gap:8px; }
     .term-ps{ color:var(--g); flex:0 0 auto; }
@@ -414,7 +414,10 @@
     .tol-conn-fail{ display:none; padding:0 16px; }
     .tol-conn-fail .tol-fl{ display:none; font-size:23px; line-height:1.25; color:#9a0000; }
     .tol-conn-fail .tol-fl.tol-kick{ color:#16168a; }
-    .tol-conn-exit{ display:none; margin-top:14px; font-size:18px; color:#333; }
+    .tol-conn-exit{ display:none; margin-top:16px; font-size:18px; letter-spacing:1px; color:#161616; cursor:pointer;
+      background:#c2c2c2; padding:5px 18px;
+      border-top:2px solid #e6e6e6; border-left:2px solid #e6e6e6; border-bottom:2px solid #5e5e5e; border-right:2px solid #5e5e5e; }
+    .tol-conn-exit:active{ border-top-color:#5e5e5e; border-left-color:#5e5e5e; border-bottom-color:#e6e6e6; border-right-color:#e6e6e6; }
     .tol-connbox.tol-failed .tol-conn-status, .tol-connbox.tol-failed .tol-conn-bar{ display:none; }
     .tol-connbox.tol-failed .tol-conn-fail{ display:block; }
     @media (max-width:560px){
@@ -431,7 +434,7 @@
   <div class="monitor">
   <main class="crt" id="crt">
     <div class="bar">
-      <span>FYRBERG-DOS v1.4</span>
+      <span>FYRBERG-DOS v1.5</span>
       <span class="led">DRIVE A: <span class="dot" aria-hidden="true"></span></span>
     </div>
 
@@ -489,7 +492,7 @@
     </div>
     <div class="cterm" id="cterm" hidden>
       <div class="cterm-head">
-        <div>FYRBERG-DOS [Version 1.4]</div>
+        <div>FYRBERG-DOS [Version 1.5]</div>
         <div class="cterm-sub">Type HELP if you're helpless.</div>
       </div>
       <div class="cterm-out" id="ctermOut"></div>
@@ -613,7 +616,7 @@
       var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       var bootEl = document.getElementById('boot');
       var lines = [
-        "FYRBERG-DOS v1.4  (c) 2026",
+        "FYRBERG-DOS v1.5  (c) 2026",
         "MEMORY OK ........ 640K",
         "READING DRIVE A: ........ OK",
         ""
@@ -933,7 +936,7 @@
       cprint("File not found: " + f);
     }
     function doVer(){
-      cprint("FYRBERG-DOS [Version 1.4]");
+      cprint("FYRBERG-DOS [Version 1.5]");
       cprint("(C) 2026 Jason Fyrberg. Some rights reserved.", 'dim');
     }
 
@@ -1078,7 +1081,7 @@
     function tolDial(){
       if(tolRunning || !tolConn.hidden){ return; }
       tolRunning=true; tolConn.hidden=false; tolConn.classList.remove('tol-failed');
-      tolFl.forEach(function(e){ e.style.display='none'; }); tolExitHint.style.display='none';
+      tolFl.forEach(function(e){ e.style.display='none'; }); tolExitHint.style.display='inline-block';
       tolFill.style.transition='none'; tolFill.style.width='0%';
       var k=0; tolDotsT=setInterval(function(){ k=(k+1)%4; tolDots.textContent=Array(k+1).join('.'); },330);
       try{ tolModem.currentTime=0; var p=tolModem.play(); if(p&&p.catch){ p.catch(function(){}); } }catch(e){}
@@ -1092,7 +1095,7 @@
       if(tolFailT){ clearTimeout(tolFailT); tolFailT=null; }
       tolConn.classList.add('tol-failed'); tolRunning=false; tolClearReveal();
       tolFl.forEach(function(el,i){ tolRevealT.push(setTimeout(function(){ el.style.display='block'; }, i*1100)); });
-      tolRevealT.push(setTimeout(function(){ tolExitHint.style.display='block'; }, tolFl.length*1100));
+      tolRevealT.push(setTimeout(function(){ tolExitHint.style.display='inline-block'; }, tolFl.length*1100));
     }
     function closeTOL(){
       if(tolDotsT){ clearInterval(tolDotsT); tolDotsT=null; }
@@ -1113,6 +1116,7 @@
       }
     }, true);
     if(tolExitBtn){ tolExitBtn.addEventListener('click', closeTOL); }
+    if(tolExitHint){ tolExitHint.addEventListener('click', closeTOL); }
   })();
   </script>
 </body>
