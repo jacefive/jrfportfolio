@@ -353,7 +353,7 @@
     @media (max-width:560px){ .db-shot img{ width:200px; margin:0 auto; } .db-title{ font-size:46px; } .db-body{ gap:16px; } }
     @media (prefers-reduced-motion:reduce){ .db-screen{ animation:none; } }
 
-    /* ===== Playable DOS terminal (test_index, v1.5) ===== */
+    /* ===== Playable DOS terminal (test_index, v1.6) ===== */
     #drive{ cursor:text; }
     .aline{ display:flex; align-items:baseline; gap:8px; }
     .term-ps{ color:var(--g); flex:0 0 auto; }
@@ -434,7 +434,7 @@
   <div class="monitor">
   <main class="crt" id="crt">
     <div class="bar">
-      <span>FYRBERG-DOS v1.5</span>
+      <span>FYRBERG-DOS v1.6</span>
       <span class="led">DRIVE A: <span class="dot" aria-hidden="true"></span></span>
     </div>
 
@@ -469,6 +469,14 @@
         </button>
         <div class="cap">&#9654; READY</div>
       </div>
+
+      <div class="slot">
+        <button class="floppy" data-action="dosprompt" data-name="DOSPROMPT.EXE" aria-label="Open DOSPROMPT.EXE, a note about the DOS prompt built into this site">
+          <span class="shutter" aria-hidden="true"></span>
+          <span class="label"><span class="fname">DOSPROMPT.EXE</span><span class="fdesc">DOS prompt built into this site</span></span>
+        </button>
+        <div class="cap">&#9654; READY</div>
+      </div>
     </div>
 
     <div class="drive" id="drive" style="opacity:0;">
@@ -492,7 +500,7 @@
     </div>
     <div class="cterm" id="cterm" hidden>
       <div class="cterm-head">
-        <div>FYRBERG-DOS [Version 1.5]</div>
+        <div>FYRBERG-DOS [Version 1.6]</div>
         <div class="cterm-sub">Type HELP if you're helpless.</div>
       </div>
       <div class="cterm-out" id="ctermOut"></div>
@@ -584,6 +592,26 @@
     </div>
   </div>
 
+  <div class="about" id="dosprompt" role="dialog" aria-modal="true" aria-labelledby="dpTitle" hidden>
+    <div class="about-screen">
+      <div class="about-bar">
+        <span id="dpTitle">DOSPROMPT.EXE &nbsp;&middot;&nbsp; DOS PROMPT BUILT INTO THIS SITE</span>
+        <button class="about-x" id="dpClose" aria-label="Close and return to home screen">[ X ]</button>
+      </div>
+      <div class="about-body">
+        <p>&gt; LOADING DOSPROMPT.EXE...</p>
+        <p>After making this site and realizing I wanted to be able to boot back to the C drive like the old days when I loaded up Sierra games or old Lucasarts games on my IBM PC, I created a C drive underneath this site.</p>
+        <p>If you go back to the main screen you'll notice you can type in the A drive prompt under the discs. Type C: and hit enter and you'll be in the prompt.</p>
+        <p>Don't know what to do next? That's the game. If you don't remember any DOS prompts, go look some up and see what you can figure out.</p>
+        <p>But, I have to warn you, there's someone in there. He says he was digitized while working for some company? I don't know, but you can go check it out for yourself. See what you can figure out. I had a lot of fun making it, and I hope it brings you some nostalgic joy, USER.</p>
+      </div>
+      <div class="about-foot">
+        <span>A:\&gt; _</span>
+        <button class="about-back" id="dpBack">[ &#9664; BACK TO HOME SCREEN ]</button>
+      </div>
+    </div>
+  </div>
+
   <div class="db" id="draftbuddy" role="dialog" aria-modal="true" aria-labelledby="dbTitle" hidden>
     <div class="db-screen">
       <div class="db-bar">
@@ -616,7 +644,7 @@
       var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       var bootEl = document.getElementById('boot');
       var lines = [
-        "FYRBERG-DOS v1.5  (c) 2026",
+        "FYRBERG-DOS v1.6  (c) 2026",
         "MEMORY OK ........ 640K",
         "READING DRIVE A: ........ OK",
         ""
@@ -721,6 +749,28 @@
         if (!db.hidden && e.key === 'Escape'){ e.stopPropagation(); closeDraftBuddy(); }
       });
 
+      // DOSPROMPT.EXE -> builder's note window overlay
+      var dp = document.getElementById('dosprompt');
+      var dpClose = document.getElementById('dpClose');
+      var dpBack = document.getElementById('dpBack');
+      var dpLastFocus = null;
+      function openDosprompt(){
+        dpLastFocus = document.activeElement;
+        dp.hidden = false;
+        if (typeof posthog !== 'undefined' && posthog.capture){ try{ posthog.capture('dosprompt_opened'); }catch(e){} }
+        setTimeout(function(){ dpClose.focus(); }, 0);
+      }
+      function closeDosprompt(){
+        dp.hidden = true;
+        if (dpLastFocus && dpLastFocus.focus){ dpLastFocus.focus(); }
+      }
+      dpClose.addEventListener('click', closeDosprompt);
+      dpBack.addEventListener('click', closeDosprompt);
+      dp.addEventListener('click', function(e){ if (e.target === dp){ closeDosprompt(); } });
+      document.addEventListener('keydown', function(e){
+        if (!dp.hidden && e.key === 'Escape'){ e.stopPropagation(); closeDosprompt(); }
+      });
+
       var floppies = Array.prototype.slice.call(document.querySelectorAll('.floppy'));
       floppies.forEach(function(btn){
         btn.addEventListener('click', function(){
@@ -728,6 +778,7 @@
           if (!done){ reveal(); return; }
           if (btn.getAttribute('data-action') === 'about'){ openAbout(); return; }
           if (btn.getAttribute('data-action') === 'draftbuddy'){ openDraftBuddy(); return; }
+          if (btn.getAttribute('data-action') === 'dosprompt'){ openDosprompt(); return; }
           launch(btn);
         });
         // (disk-hover feedback removed; the A: line is now an interactive prompt)
@@ -936,7 +987,7 @@
       cprint("File not found: " + f);
     }
     function doVer(){
-      cprint("FYRBERG-DOS [Version 1.5]");
+      cprint("FYRBERG-DOS [Version 1.6]");
       cprint("(C) 2026 Jason Fyrberg. Some rights reserved.", 'dim');
     }
 
@@ -1022,7 +1073,8 @@
     var DISKS = {
       'readme':'README.EXE','readme.exe':'README.EXE','about':'README.EXE',
       'democrm':'DEMOCRM.EXE','democrm.exe':'DEMOCRM.EXE','demo crm':'DEMOCRM.EXE','crm':'DEMOCRM.EXE','crmdemo':'DEMOCRM.EXE','crmdemo.html':'DEMOCRM.EXE',
-      'draftbud':'DRAFTBUD.EXE','draftbud.exe':'DRAFTBUD.EXE','draftbuddy':'DRAFTBUD.EXE'
+      'draftbud':'DRAFTBUD.EXE','draftbud.exe':'DRAFTBUD.EXE','draftbuddy':'DRAFTBUD.EXE',
+      'dosprompt':'DOSPROMPT.EXE','dosprompt.exe':'DOSPROMPT.EXE'
     };
     function runA(raw){
       var lc = raw.replace(/\s+/g,' ').trim().toLowerCase();
@@ -1032,7 +1084,7 @@
         var b = document.querySelector('.floppy[data-name="'+DISKS[lc]+'"]');
         aIn.value=''; if (b){ b.click(); return; }
       }
-      if (lc === 'dir' || lc === 'ls'){ abread.textContent = "Disks: README.EXE  DEMOCRM.EXE  DRAFTBUD.EXE. Type one to run it, or C: for the hard drive."; return; }
+      if (lc === 'dir' || lc === 'ls'){ abread.textContent = "Disks: README.EXE  DEMOCRM.EXE  DRAFTBUD.EXE  DOSPROMPT.EXE. Type one to run it, or C: for the hard drive."; return; }
       if (lc === 'help'){ abread.textContent = "Type a disk name to run it, or C: for the hard drive."; return; }
       abread.textContent = "Type a disk name to run it, or C: for the hard drive.";
     }
